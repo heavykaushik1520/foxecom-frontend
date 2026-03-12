@@ -1,0 +1,1144 @@
+/*
+Theme Name: Ministore
+Theme URI: 
+Author: 
+Author URI: 
+Description: Ministore is specially designed product packaged for Ministore by Moksha.
+Version: 
+*/
+
+/*--------------------------------------------------------------
+This is main CSS file that contains custom style rules used in this template
+--------------------------------------------------------------*/
+
+/*------------------------------------*\
+    Table of contents
+\*------------------------------------*/
+
+/*------------------------------------------------
+
+CSS STRUCTURE:
+
+    
+/*--------------------------------------------------------------
+/** 1. VARIABLES
+--------------------------------------------------------------*/
+:root {
+  --accent-color:             #717171;
+  --white-color:              #fff;
+  --black-color:              #000;
+  --gray-color:               #F3F3F3;
+  --gray-color-300:           #D8D8D8;
+  --gray-color-500:           #AEAEAE;
+  --gray-color-800:           #3A3A3A;
+  --light-gray-color:         #D7DDDF;
+  --primary-color:            #89bb56;
+  --secondary-color:          #ffffff;
+  --bs-primary-rgb:           137,187,86;
+  --light-color:              #f8f9fa;
+  --dark-color:               #212529;
+  --light-blue-color:         #EDF1F3;
+  --navbar-color-color:       #131814;
+  --swiper-theme-color:       #4A4A4A;
+  --swiper-pagination-color:  #4A4A4A;
+
+  /* Premium design tokens */
+  --radius-sm:               6px;
+  --radius-md:               10px;
+  --radius-lg:               14px;
+  --radius-xl:               20px;
+  --shadow-sm:               0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md:               0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg:               0 10px 40px rgba(0,0,0,0.1);
+  --shadow-xl:               0 20px 60px rgba(0,0,0,0.12);
+  --transition-fast:         0.2s ease;
+  --transition-smooth:        0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring:       0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* on mobile devices below 600px
+ */
+@media screen and (max-width: 600px) {
+    :root {
+        --header-height : 100px;
+        --header-height-min   : 80px;
+    }
+}
+
+/* Fonts */
+:root {
+    --body-font           : "Poppins", sans-serif;
+    --heading-font        : "Poppins", sans-serif;
+}
+
+/*----------------------------------------------*/
+/* 1 GENERAL TYPOGRAPHY */
+/*----------------------------------------------*/
+
+/* 1.1 General Styles
+/*----------------------------------------------*/
+*, *::before, *::after {
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+html {
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+body {
+  font-family: var(--body-font) !important;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.65;
+  margin: 0;
+  color: var(--black-color);
+  background-color: #fafbfc;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+p {
+  font-size: 1em;
+  color: var(--black-color);
+  margin-bottom: 1rem;
+}
+ul.inner-list li {
+   font-size: 1.2em;
+}
+a {
+  color: var(--black-color);
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+a.light {
+  color: var(--light-color);
+}
+a:hover {
+  text-decoration: none;
+  color: var(--primary-color);
+  opacity: 1;
+}
+
+/*------------ Background Color -----------*/
+.bg-gray {
+    background: var(--gray-color);
+}
+.bg-dark {
+    background: var(--dark-color);
+}
+.bg-light {
+    background: var(--light-color);
+}
+.bg-light-blue {
+    background: var(--light-blue-color);
+}
+
+/* - Section Padding
+--------------------------------------------------------------*/
+.padding-xsmall {
+  padding-top: 0.5em;
+  padding-bottom: 0.5em;
+}
+.padding-small {
+  padding-top: 2em;
+  padding-bottom: 2em;
+}
+.padding-medium {
+  padding-top: 4em;
+  padding-bottom: 4em;
+}
+.padding-large {
+  padding-top: 7em;
+  padding-bottom: 7em;
+}
+.padding-xlarge {
+  padding-top: 9.5em;
+  padding-bottom: 9.5em;
+}
+
+/* no padding */
+.no-padding-top {
+  padding-top: 0 !important;
+}
+.no-padding-right {
+  padding-right: 0 !important;
+}
+.no-padding-bottom {
+  padding-bottom: 0 !important;
+}
+.no-padding-left {
+  padding-left: 0 !important;
+}
+.no-padding-tb {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+.no-padding-lr {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+.no-gutter {
+  padding: 0 !important;
+}
+
+/* no padding and margin */
+.no-padding {
+  padding: 0 !important;
+}
+.no-margin {
+  margin: 0 !important;
+}
+
+/* - Section margin
+--------------------------------------------------------------*/
+.margin-small {
+  margin-top: 3em;
+  margin-bottom: 3em;
+}
+.margin-medium {
+  margin-top: 5em;
+  margin-bottom: 5em;
+}
+.margin-large {
+  margin-top: 7em;
+  margin-bottom: 7em;
+}
+.margin-xlarge {
+  margin-top: 9em;
+  margin-bottom: 9em;
+}
+
+@media only screen and (max-width: 768px) {
+  .margin-small,
+  .margin-medium,
+  .margin-large {
+    margin-top: 1em;
+    margin-bottom: 1em;
+  }
+}
+
+
+/* - Section Title
+--------------------------------------------------------------*/
+h1, h2, h3, h4, h5, h6 {
+  color: var(--black-color);
+}
+h3.card-title,
+h3.cart-title {
+   font-size: 1.5em;
+}
+
+/* - Section width
+--------------------------------------------------------------*/
+.u-full-width {
+    width: 100%;
+    border: none;
+}
+
+/*--------------------------------------------------------------
+/** 2.10 Buttons
+--------------------------------------------------------------*/
+/* - Button Sizes
+------------------------------------------------------------- */
+.btn.btn-small {
+  padding: 0.8em 1.8em;
+  font-size: 0.65em;
+}
+.btn.btn-medium {
+  padding: 0.8em 2.8em;
+  font-size: 1.1em;
+  letter-spacing: 2px;
+}
+.btn.btn-large {
+  padding: 2.4em 5.1em;
+  font-size: 1.8em;
+}
+
+/* - Button Shapes
+------------------------------------------------------------- */
+.btn.btn-rounded,
+.btn.btn-rounded::after {
+  border-radius: 6px;
+}
+.btn.btn-pill,
+.btn.btn-pill::after {
+  border-radius: 2em;
+}
+/* button outline */
+.btn.btn-outline-dark,
+.btn.btn-outline-light,
+.btn.btn-outline-accent {
+  background: transparent;
+  text-shadow: none;
+  box-shadow: none;
+}
+.btn.btn-outline-dark:hover::after,
+.btn.btn-outline-light:hover::after {
+  background-color: transparent;
+}
+.btn.btn-outline-dark {
+  border-color: rgba(0,0,0,1);
+  color: var(--dark-color);
+}
+.btn.btn-outline-dark:hover {
+  background: var(--dark-color);
+  color: var(--light-color);
+}
+.btn.btn-outline-light {
+  border-color: rgba(255,255,255,0.5);
+  color: var(--light-color);
+}
+.btn.btn-outline-light:hover {
+  background: var(--primary-color);
+  color: var(--light-color);
+  border-color: var(--primary-color);
+}
+.btn.btn-outline-accent {
+  background: transparent;
+  border-color: var(--accent-color);
+  color: var(--dark-color);
+}
+.btn.btn-outline-accent:hover {
+  border-color: var(--dark-color);
+  color: var(--dark-color) !important;
+}
+.btn.btn-full {
+  display: block;
+  margin: .85em 0;
+  width: 100%;
+  letter-spacing: 0.12em;
+}
+
+/* no border radius */
+.btn-rounded-none,
+.btn-rounded-none::after {
+  border-radius: 0;
+}
+
+/* - Buttons Color Scheme
+------------------------------------------------------------- */
+.btn.btn-normal {
+  text-decoration: underline;
+  border: none;
+}
+.btn.btn-normal:hover {
+  text-decoration: none;
+}
+.btn.btn-accent {
+  color: var(--light-color);
+  background-color: var(--accent-color);
+  border: none;
+}
+.btn.btn-accent:hover {
+  color: var(--light-color) !important;
+  background-color: var(--primary-color);
+}
+.btn.btn-black {
+  background-color: var(--dark-color);
+  color: var(--light-color);
+  border: none;
+}
+.btn.btn-black:hover {
+  background-color: var(--primary-color);
+  color: var(--light-color);
+}
+.btn.btn-light {
+  background-color: var(--light-color);
+  color: var(--dark-color);
+  border: none;
+}
+.btn.btn-light:hover {
+  background-color: var(--primary-color);
+  color: var(--light-color);
+  color: #ffffff !important;
+}
+.btn.btn-primary {
+  background: var(--primary-color);
+  color: var(--light-color);
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: all var(--transition-smooth);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+.btn.btn-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+.btn.btn-primary:hover::before {
+  left: 100%;
+}
+.btn.btn-primary:hover {
+  background-color: #7aa84a;
+  color: var(--light-color);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+/* - Buttons Aligns
+------------------------------------------------------------- */
+.btn-left {
+  text-align: left;
+  display: block;
+}
+.btn-center {
+  text-align: center;
+  display: block;
+}
+.btn-right {
+  text-align: right;
+  display: block;
+}
+
+/*----------------------------------------------*/
+/* 2 SITE STRUCTURE */
+/*----------------------------------------------*/
+
+/* - Search Bar
+------------------------------------------------------------- */
+.search-box {
+    background: var(--gray-color);
+    position: relative;
+}
+.close-button {
+    position: absolute;
+    top: 20px;
+    right: 120px;
+    cursor: pointer;
+    z-index: 9;
+}
+.search-box input.search-input {
+    font-size: 1.3em;
+    width: 70%;
+    height: 30px;
+    padding: 25px;
+    border-radius: 80px;
+    border-color: rgb(0 0 0 / 25%);
+    background: transparent;
+}
+.search-box svg {
+    width: 22px;
+    height: 22px;
+    color: var(--black-color);
+}
+.search-box svg.search {
+    margin-left: -50px;
+}
+
+
+/** Search Form
+--------------------------------------------------------------*/
+.search-form input[type="search"].search-field {
+  border: none;
+  background: #f1f1f1;
+  width: 100%;
+  border-radius: 50px;
+  padding: 10px 40px;
+}
+.search-form input[type="search"].search-field::focus {
+  border-color: #af9aaa;
+}
+.search-form button {
+  position: absolute;
+  top: 6px;
+  right: 9px;
+  background: transparent;
+  border: none;
+}
+
+/** Search Popup
+--------------------------------------------------------------*/
+.search-popup {
+  background-color: #fff;
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  visibility: hidden;
+  z-index: 9999;
+  -webkit-transition: opacity 0.3s 0s, visibility 0s 0.3s;
+  -moz-transition: opacity 0.3s 0s, visibility 0s 0.3s;
+  transition: opacity 0.3s 0s, visibility 0s 0.3s;
+}
+.search-popup.is-visible {
+  opacity: 1;
+  visibility: visible;
+  cursor: -webkit-image-set(url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath fill='%23FFF' d='M20 1l-1-1-9 9-9-9-1 1 9 9-9 9 1 1 9-9 9 9 1-1-9-9'/%3E%3C/svg%3E") 1x, url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath fill='%23000' d='M20 1l-1-1-9 9-9-9-1 1 9 9-9 9 1 1 9-9 9 9 1-1-9-9'/%3E%3C/svg%3E") 2x), pointer;
+  cursor: url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath fill='%23000' d='M20 1l-1-1-9 9-9-9-1 1 9 9-9 9 1 1 9-9 9 9 1-1-9-9'/%3E%3C/svg%3E"), pointer;
+  -webkit-transition: opacity 0.3s 0s, visibility 0s 0s;
+  -moz-transition: opacity 0.3s 0s, visibility 0s 0s;
+  transition: opacity 0.3s 0s, visibility 0s 0s;
+}
+.search-popup-container {
+  background-color: transparent;
+  position: relative;
+  top: 50%;
+  margin: 0 auto;
+  padding: 0;
+  width: 90%;
+  max-width: 800px;
+  text-align: center;
+  box-shadow: none;
+  cursor: default;
+  -webkit-transform: translateY(-40px);
+  transform: translateY(-40px);
+  -webkit-backface-visibility: hidden;
+  -webkit-transition-property: -webkit-transform;
+  transition-property: transform;
+  -webkit-transition-duration: 0.3s;
+  transition-duration: 0.3s;
+}
+.is-visible .search-popup-container {
+  -webkit-transform: translateY(-50%);
+  transform: translateY(-50%);
+}
+.search-popup-form {
+  position: relative;
+  margin: 0 0 3em 0;
+}
+.search-popup-form .form-control {
+  padding: 0 0 .375em 0;
+  font-size: 2em;
+}
+.search-popup-form #search-popup-submit {
+  display: none;
+}
+.search-popup .search-popup-close {
+  display: block;
+  position: absolute;
+  top: 2em;
+  right: 2em;
+  margin: -0.5em;
+  padding: 0.5em;
+  line-height: 0;
+}
+.search-popup .search-popup-close:hover {
+  -webkit-transform: rotate(90deg);
+  -ms-transform: rotate(90deg);
+  transform: rotate(90deg);
+}
+.search-popup .search-popup-close i {
+  display: block;
+  position: relative;
+  width: 1em;
+  height: 1em;
+  fill: rgba(0,0,0,0.5);
+}
+.search-popup .search-popup-close:hover i {
+  fill: rgba(0,0,0,1);
+}
+.search-popup .cat-list-title {
+  margin-top: 40px;
+  margin-bottom: 10px;
+  font-size: 0.6em;
+  font-weight: normal;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.search-popup .cat-list {
+  margin: 0;
+  list-style-type: none;
+}
+.search-popup .cat-list-item {
+  display: inline-block;
+  margin-bottom: 0;
+  letter-spacing: 0.015em;
+  font-size: 2em;
+}
+.search-popup .cat-list-item a {
+  position: relative;
+}
+.search-popup .cat-list-item a::after {
+  background: none repeat scroll 0 0 #fff;
+  content: "";
+  height: 1px;
+  border-bottom: 1px solid #ff9697;
+  left: 0;
+  opacity: 0;
+  position: absolute;
+  top: 100%;
+  width: 100%;
+  -webkit-transition: height 0.3s,opacity 0.3s,-webkit-transform 0.3s;
+  transition: height 0.3s,opacity 0.3s,transform 0.3s;
+  -webkit-transform: translateY(-5px);
+  transform: translateY(-5px);
+}
+.search-popup .cat-list-item a:hover::after {
+  height: 1px;
+  opacity: 1;
+  -webkit-transform: translateY(2px);
+  transform: translateY(2px);
+}
+.search-popup .cat-list-item::after {
+  content: "/";
+  padding: 0 5px;
+  line-height: 1;
+  color: rgba(0, 0, 0, 0.5);
+  vertical-align: text-top;
+}
+.search-popup .cat-list-item:last-child::after {
+  display: none;
+}
+
+@media only screen and (max-width: 991px) {
+  .search-popup .cat-list-item,
+  .search-popup-form .form-control {
+    font-size: 1.425em;
+  }
+}
+@media only screen and (max-width: 767px) {
+.search-popup .search-popup-close {
+    top: 1em;
+    right: 1em;
+  }
+}
+@media only screen and (max-width: 575px) {
+  .search-popup .cat-list-item,
+  .search-popup-form .form-control {
+    font-size: 1.125em;
+  }
+  .search-popup .search-popup-close {
+    top: 1em;
+    right: 1em;
+  }
+}
+
+.search-popup input[type="search"] {
+  font-size: 24px;
+  height: 60px;
+  padding: 26px;
+}
+.search-popup .search-form button {
+  top: 12px;
+  right: 15px;
+}
+.search-popup .search-form button svg {
+  height: 28px;
+  width: 28px;
+}
+
+
+/* 1. Header
+/*----------------------------------------------*/
+.site-header {
+    position: fixed;
+    width: 100%;
+    z-index: 10;
+    transition: background 0.3s ease-out;
+}
+.navbar-toggler svg.navbar-icon {
+    width: 50px;
+    height: 50px;
+}
+.navbar-nav .nav-item a.nav-link {
+    color: var(--black-color);
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-weight: 500;
+}
+.navbar-nav .nav-item a.nav-link.active, 
+.navbar-nav .nav-item a.nav-link:focus, 
+.navbar-nav .nav-item a.nav-link:hover {
+    color: var(--primary-color);
+}
+
+/*------------ Offcanvas -------------- */
+#header-nav .navbar-toggler:focus {
+    box-shadow: none;
+}
+#header-nav .offcanvas.show {
+    z-index: 9999;
+    background-color: var(--light-blue-color);
+}
+#header-nav .offcanvas-end {
+    width: 500px;
+}
+.offcanvas.show .nav-item a.nav-link {
+    font-size: 2em;
+}
+.offcanvas.show .offcanvas-body .navbar-nav {
+    align-items: unset!important;
+    padding-left: 20px;
+}
+
+/*------------ Top User Icons -----------*/
+.site-header .user-items svg {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+@media only screen and (max-width: 991px) {
+  #navbar .user-items {
+    display: none;
+  }
+}
+
+
+/* 2. Billboard
+/*----------------------------------------------*/
+/*------------Swiper Arrow -----------*/
+#billboard .swiper-arrow {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+}
+.swiper-icon.swiper-arrow {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-md);
+    transition: all var(--transition-smooth);
+    opacity: 0.8;
+}
+.swiper-icon.swiper-arrow:hover {
+    opacity: 1;
+    transform: scale(1.1);
+    box-shadow: var(--shadow-lg);
+    background: var(--primary-color);
+}
+.swiper-icon.swiper-arrow svg {
+    fill: var(--light-gray-color);
+    transition: fill var(--transition-fast);
+}
+.swiper-icon.swiper-arrow:hover svg,
+.swiper-icon.swiper-arrow:focus svg {
+    fill: #fff;
+}
+#billboard .swiper-arrow.swiper-arrow-prev {
+    left: 0;
+}
+#billboard .swiper-arrow.swiper-arrow-next {
+    right: 0;
+}
+
+@media only screen and (max-width: 767px) {
+  #billboard .banner-content {
+      margin-top: 210px;
+  }
+  #billboard .image-holder {
+      margin-top: -390px;
+      opacity: 0.3;
+  }
+  #billboard .swiper-arrow {
+      top: 400px;
+  }
+}
+
+/* 3. Icon Box - Company Services
+/*----------------------------------------------*/
+.icon-box {
+    transition: all var(--transition-smooth);
+    padding: 1.5rem;
+    border-radius: var(--radius-md);
+}
+.icon-box:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+    background: rgba(255, 255, 255, 0.8);
+}
+.icon-box .icon-box-icon {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* background: rgba(137, 187, 86, 0.1); */
+    border-radius: 50%;
+    margin-bottom: 1rem;
+    transition: all var(--transition-smooth);
+}
+.icon-box:hover .icon-box-icon {
+    /* background: var(--primary-color); */
+    transform: scale(1.1);
+}
+.icon-box .icon-box-icon svg {
+    width: 28px;
+    height: 28px;
+    fill: #000000;
+    transition: fill var(--transition-fast);
+}
+.icon-box:hover .icon-box-icon svg {
+    fill: #000000;
+}
+
+@media only screen and (max-width: 991px) {
+  #company-services .icon-box {
+    flex-wrap: wrap;
+  }
+}
+
+/* 4. Product
+/*----------------------------------------------*/
+.product-store .product-card .cart-concern {
+    bottom: 75px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all var(--transition-spring);
+    opacity: 0;
+    transform: translateY(10px);
+}
+.product-store .product-card:hover .cart-concern {
+    bottom: 90px;
+    opacity: 1;
+    transform: translateY(0);
+}
+.product-card .cart-concern {
+    background: rgba(33, 37, 41, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-md);
+    color: #fff;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    box-shadow: var(--shadow-lg);
+    transition: all var(--transition-smooth);
+}
+.product-card .cart-concern:hover {
+    background: var(--primary-color);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-xl);
+}
+.product-card .cart-concern svg {
+    width: 18px;
+    height: 18px;
+    fill: var(--light-color);
+    margin-left: 9px;
+    transition: transform var(--transition-fast);
+}
+.product-card .cart-concern:hover svg {
+    transform: translateX(4px);
+}
+.product-card .card-detail span {
+    font-size: 1.5em;
+}
+
+@media only screen and (max-width: 575px) {
+  .product-store .product-card .card-detail {
+      padding: 10px;
+  }
+}
+
+/*------------Swiper Pagination -----------*/
+.product-store .swiper-pagination.swiper-pagination-clickable.swiper-pagination-bullets.swiper-pagination-horizontal {
+    bottom: 35px;
+}
+.swiper-pagination span.swiper-pagination-bullet {
+    width: 15px;
+    height: 15px;
+}
+
+/* 5. Testimonial
+/*----------------------------------------------*/
+.review-item blockquote {
+    font-size: 2.5em;
+    font-weight: 300;
+    line-height: 1.2;
+}
+.rating svg.star {
+    width: 16px;
+    height: 16px;
+    fill: var(--black-color);
+}
+#testimonials .swiper-arrow svg {
+    width: 45px;
+    height: 45px;
+    fill: var(--light-gray-color);
+}
+.review-content .swiper-arrow {
+    top: 0;
+    bottom: 0;
+    z-index: 2;
+}
+.review-content .swiper-arrow.swiper-arrow-next {
+    right: 0;
+}
+.review-content .quotation svg.quote {
+    color: var(--light-blue-color);
+}
+
+@media only screen and (max-width: 767px) {
+  #testimonials blockquote {
+      font-size: 2em;
+  }
+  .review-content .swiper-arrow {
+      bottom: -420px;
+  }
+}
+
+/* 6. Subscribe
+/*----------------------------------------------*/
+.subscribe-content p {
+   color: var(--gray-color-500);
+}
+
+@media only screen and (max-width: 1199px) {
+  .subscription-form input.form-control,
+  .subscription-form button {
+      width: 100%;
+      margin-bottom: 10px;
+  }
+}
+
+/* 7. Instagram
+/*----------------------------------------------*/
+#instagram figure.instagram-item {
+    width: 20%;
+}
+figure.instagram-item img.insta-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.instagram-item .icon-overlay {
+    top: 30px;
+    left: 0;
+    width: 100%;
+    height: auto;
+    color: var(--light-color);
+    opacity: 0;
+    transition: 0.9s ease-out;
+}
+.instagram-item:hover .icon-overlay {
+    top: 0;
+    opacity: 1;
+}
+.instagram-item .icon-overlay svg.instagram {
+    height: 50px;
+}
+
+@media only screen and (max-width: 767px) {
+  #instagram figure.instagram-item {
+      width: 30%;
+  }
+}
+
+@media only screen and (max-width: 501px) {
+  #instagram figure.instagram-item {
+      width: 100%;
+  }
+}
+
+/* 8. Footer
+/*----------------------------------------------*/
+/*------------ Social Icon -----------*/
+.social-links svg {
+    width: 20px;
+    height: 20px;
+    color: var(--light-gray-color);
+}
+.social-links svg:hover {
+    color: var(--black-color);
+}
+.social-links li {
+  padding-right: 30px;
+}
+
+
+/* 9. About Us Page
+/*----------------------------------------------*/
+/*------------ Video Icon -----------*/
+.video-item a {
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+.video-item svg.video-player {
+    width: 80px;
+    height: 80px;
+    padding: 19px;
+    border-radius: 50%;
+}
+
+/* - Shop Page
+--------------------------------------------------------------*/
+/* ----------- Search Bar -----------*/
+.shopify-grid select#input-sort {
+    font-size: 1.2em;
+    color: var(--dark-grey-color);
+    border: none;
+    padding: 0;
+    text-align: center;
+}
+
+/* ----------- SideBar -----------*/
+.sidebar input.search-field {
+    width: 290px;
+    height: 50px;
+    box-shadow: 5px 5px 15px 5px #eee;
+    border: 1px solid #eee;
+    padding-left: 20px;
+    outline-offset: 0;
+}
+.sidebar .search-icon {
+    padding: 14px;
+}
+.sidebar svg.search {
+    width: 20px;
+    height: 20px;
+}
+.sidebar h5.widget-title {
+    font-size: 1.4em;
+    margin-bottom: 15px;
+}
+.sidebar .sidebar-list li {
+    font-size: 1.2em;
+}
+.sidebar .sidebar-list li a {
+    color: var(--dark-30);
+}
+.sidebar .sidebar-list li a:hover {
+    color: var(--black-color);
+}
+
+@media only screen and (max-width: 991px) {
+  .widget-search-bar form {
+      flex-wrap: wrap;
+  }
+}
+
+/* ----------- Pagination -----------*/
+.paging-navigation .pagination .page-numbers {
+    font-size: 1.4em;
+    color: var(--gray-color-500);
+}
+.paging-navigation .pagination .page-numbers:hover {
+    color: var(--black-color);
+}
+.paging-navigation .pagination svg {
+    width: 35px;
+}
+
+
+/* 10. Single Product Page
+/*----------------------------------------------*/
+/*------------ Product Info -----------*/
+.product-info .rating svg.star-fill {
+    fill: var(--dark-color);
+}
+.product-info .select-list li.select-item {
+    font-size: 1.2em;
+}
+.product-quantity .input-group {
+  width: 140px;
+  gap: 2px;
+}
+.product-quantity #quantity {
+  height: auto;
+  width: 20px;
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+.product-quantity #quantity,
+.product-quantity .btn-number {
+  width: 40px;
+  height: 40px;
+  text-align: center;
+  background: #FFFFFF;
+  border: 1px solid #E2E2E2;
+  border-radius: 6px;
+  color: #222;
+  padding: 0;
+}
+.single-product .cart-wrap h4.item-title {
+    font-size: 1.5em;
+}
+.single-product .product-quantity .stock-number {
+    font-size: 1.2em;
+}
+.meta-product h4.item-title {
+    font-size: 1.2em;
+}
+
+/*------------ Product Info Tabs -----------*/
+.product-info-tabs .tabs-listing button {
+    font-size: 2em;
+    color: var(--dark-color);
+}
+.product-info-tabs .nav-tabs .nav-link {
+    border: none;
+}
+.product-info-tabs .nav-tabs .nav-item.show .nav-link, 
+.product-info-tabs .nav-tabs .nav-link.active {
+    color: var(--black-color);
+}
+
+
+@media only screen and (max-width: 991px) {
+  .product-info-tabs .tabs-listing button {
+      font-size: 1.2em;
+      padding-right: 20px!important;
+  }
+}
+
+
+/* 10. Cart Page
+-----------------------------------------------------*/
+.shopify-cart .card-price .money {
+    font-size: 1.5em;
+}
+.shopify-cart .total-price .money {
+    font-size: 2.9em;
+}
+.total-price .cart-totals {
+    font-size: 1.5em;
+}
+.shopify-cart .table th {
+    width: 30%;
+}
+
+
+/* 11. Checkout Page
+--------------------------------------------------------------*/
+.list-group-item span {
+    font-size: 1.2em;
+}
+
+
+/* 12. Blog Page
+--------------------------------------------------------------*/
+/*------------ Sidebar -----------*/
+.sidebar-post-item h4.card-title {
+    font-size: 1.2em;
+}
+
+/* 13. Sibgle Post Page
+--------------------------------------------------------------*/
+#single-post-navigation .post-navigation span.page-nav-title {
+    font-size: 1.5em;
+}
+.post-navigation svg {
+    width: 30px;
+    height: 45px;
+}
+.post-navigation:hover svg,
+.post-navigation:focus svg {
+    fill: var(--black-color);
+}

@@ -1,0 +1,772 @@
+import React, { useState, useEffect } from 'react'
+import { Link, useSearchParams, useNavigate } from 'react-router-dom'
+import { reviewAPI, productAPI, categoryAPI, getImageUrl } from '../utils/api'
+import { useCart } from '../contexts/CartContext'
+import fallbackImage from '../assest/images/product-item1.jpg'
+import ProductRatingExpandable from '../components/ProductRatingExpandable'
+
+/** Strip markdown to plain text for filter dropdown labels */
+function stripMarkdownLabel(text) {
+  if (!text || typeof text !== 'string') return text || ''
+  return text
+    .replace(/#{1,6}\s*/g, '')
+    .replace(/\*\*?(.*?)\*\*?/g, '$1')
+    .replace(/__?(.*?)__?/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/\n+/g, ' ')
+    .trim()
+    .slice(0, 80) || text
+}
+
+const Shop = () => {
+  const { addToCart, buyNow } = useCart()
+  const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const modelIdFromUrl = searchParams.get('modelId') || ''
+
+  // State management
+  const [products, setProducts] = useState([])
+  const [categories, setCategories] = useState([])
+  const [filterOptions, setFilterOptions] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [loadingFilters, setLoadingFilters] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
+
+  // Filter states (modelId can come from URL when user clicks a model in navbar)
+  const [filters, setFilters] = useState({
+    categoryId: '',
+    brandName: '',
+    modelName: '',
+    modelId: '',
+    minPrice: '',
+    maxPrice: '',
+    inStock: '',
+    color: '',
+    material: '',
+    caseType: '',
+    search: ''
+  })
+
+  // Sort states
+  const [sortBy, setSortBy] = useState('createdAt')
+  const [sortOrder, setSortOrder] = useState('DESC')
+
+  // Pagination states - Initialize from URL params if available
+  const [pagination, setPagination] = useState({
+    page: parseInt(searchParams.get('page')) || 1,
+    limit: parseInt(searchParams.get('limit')) || 12,
+    totalItems: 0,
+    totalPages: 1
+  })
+
+  const [ratingsMap, setRatingsMap] = useState({})
+
+  // Load categories on mount
+  useEffect(() => {
+    loadCategories()
+  }, [])
+
+  // Load filter options when category changes
+  useEffect(() => {
+    if (filters.categoryId) {
+      loadFilterOptions(filters.categoryId)
+    } else {
+      loadFilterOptions()
+    }
+  }, [filters.categoryId])
+
+  // Sync modelId from URL into filters (e.g. from navbar model click)
+  useEffect(() => {
+    if (modelIdFromUrl) {
+      setFilters(prev => ({ ...prev, modelId: modelIdFromUrl }))
+    }
+  }, [modelIdFromUrl])
+
+  // Load products when filters, sort, or pagination changes
+  useEffect(() => {
+    loadProducts()
+    // Update URL params when page changes
+    const params = new URLSearchParams(searchParams)
+    if (pagination.page > 1) {
+      params.set('page', pagination.page.toString())
+    } else {
+      params.delete('page')
+    }
+    setSearchParams(params, { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters, sortBy, sortOrder, pagination.page])
+
+  const loadCategories = async () => {
+    try {
+      const data = await categoryAPI.getAll()
+      // Handle both new format (with categories property) and legacy format (direct array)
+      const categoriesArray = Array.isArray(data) ? data : (data?.categories || [])
+      setCategories(categoriesArray)
+    } catch (error) {
+      console.error('Error loading categories:', error)
+    }
+  }
+
+
+  useEffect(() => {
+    if (products.length === 0) return
+
+    const fetchRatings = async () => {
+      try {
+        const entries = await Promise.all(
+          products.map(async (product) => {
+            try {
+              const data = await reviewAPI.getByProduct(product.id)
+              return [
+                product.id,
+                {
+                  averageRating: data.averageRating || 0,
+                  reviewCount: data.totalCount ?? data.reviews?.length ?? 0,
+                },
+              ]
+            } catch {
+              return [product.id, { averageRating: 0, reviewCount: 0 }]
+            }
+          })
+        )
+
+        setRatingsMap(Object.fromEntries(entries))
+      } catch (err) {
+        console.error('Failed to load ratings', err)
+      }
+    }
+
+    fetchRatings()
+  }, [products])
+
+
+  const loadFilterOptions = async (categoryId = null) => {
+    try {
+      setLoadingFilters(true)
+      const data = await productAPI.getFilterOptions(categoryId)
+      // Handle both new API format and legacy format
+      setFilterOptions(data.data || data)
+    } catch (error) {
+      console.error('Error loading filter options:', error)
+    } finally {
+      setLoadingFilters(false)
+    }
+  }
+
+  const loadProducts = async () => {
+    try {
+      setLoading(true)
+
+      // Build query parameters
+      const params = {
+        page: pagination.page,
+        limit: pagination.limit,
+        sortBy: sortBy,
+        sortOrder: sortOrder
+      }
+
+      // Add filters
+      if (filters.categoryId) params.categoryId = filters.categoryId
+      if (filters.brandName) params.brandName = filters.brandName
+      if (filters.modelName) params.modelName = filters.modelName
+      if (filters.modelId || modelIdFromUrl) params.modelId = filters.modelId || modelIdFromUrl
+      if (filters.minPrice) params.minPrice = filters.minPrice
+      if (filters.maxPrice) params.maxPrice = filters.maxPrice
+      if (filters.inStock) params.inStock = filters.inStock
+      if (filters.color) params.color = filters.color
+      if (filters.material) params.material = filters.material
+      if (filters.caseType) params.caseType = filters.caseType
+      if (filters.search) params.search = filters.search
+
+      const response = await productAPI.filterAndSort(params)
+
+      // Handle both new API format and legacy format
+      if (response.success && response.data) {
+        setProducts(response.data.products || [])
+        if (response.data.pagination) {
+          setPagination(prev => ({
+            ...prev,
+            totalItems: response.data.pagination.totalItems || 0,
+            totalPages: response.data.pagination.totalPages || 1,
+            currentPage: response.data.pagination.currentPage || 1
+          }))
+        }
+      } else if (response.products) {
+        // Legacy format fallback
+        setProducts(response.products || [])
+        if (response.totalPages) {
+          setPagination(prev => ({
+            ...prev,
+            totalItems: response.totalItems || 0,
+            totalPages: response.totalPages || 1,
+            currentPage: response.currentPage || 1
+          }))
+        }
+      } else {
+        setProducts([])
+      }
+    } catch (error) {
+      console.error('Error loading products:', error)
+      setProducts([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value
+    }))
+    // Reset to page 1 when filters change
+    setPagination(prev => ({ ...prev, page: 1 }))
+  }
+
+  const handleSortChange = (field) => {
+    if (sortBy === field) {
+      // Toggle sort order if same field
+      setSortOrder(prev => prev === 'ASC' ? 'DESC' : 'ASC')
+    } else {
+      setSortBy(field)
+      setSortOrder('DESC')
+    }
+  }
+
+  const clearFilters = () => {
+    setSearchParams({})
+    setFilters({
+      categoryId: '',
+      brandName: '',
+      modelName: '',
+      modelId: '',
+      minPrice: '',
+      maxPrice: '',
+      inStock: '',
+      color: '',
+      material: '',
+      caseType: '',
+      search: ''
+    })
+    setSortBy('createdAt')
+    setSortOrder('DESC')
+    setPagination(prev => ({ ...prev, page: 1 }))
+  }
+
+  const handleAddToCart = async (product, e) => {
+    e.preventDefault()
+    const success = await addToCart(product, 1)
+    if (success) {
+      alert(`${product.title} added to cart!`)
+    }
+  }
+
+  const handleBuyNow = async (product, e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    if (!product.stock || product.stock <= 0) return
+    
+    // Check if user is logged in
+    const token = localStorage.getItem('token')
+    if (!token) {
+      alert('Please login to proceed with Buy Now')
+      localStorage.setItem('redirectAfterLogin', `/product/${product.id}`)
+      navigate('/login')
+      return
+    }
+
+    const success = await buyNow(product, 1)
+    if (success) {
+      navigate('/checkout')
+    }
+  }
+
+  const formatPrice = (price) => {
+    return `₹${parseFloat(price).toFixed(2)}`
+  }
+
+  const hasActiveFilters = Object.values(filters).some(val => val !== '' && val != null) || sortBy !== 'createdAt'
+
+  return (
+    <div className="padding-large">
+      <div className="container">
+        {/* Header */}
+        <div className="row mb-4">
+          <div className="col-12">
+            <h1 className="text-uppercase mb-3 fw-bold" style={{ fontSize: 'clamp(1.5rem, 4vw, 2rem)' }}>Shop</h1>
+          </div>
+        </div>
+
+        {/* Search Bar */}
+        <div className="row mb-4">
+          <div className="col-12">
+            <div className="input-group">
+              <span className="input-group-text bg-light">
+                <i className="bi bi-search"></i>
+              </span>
+              <input
+                type="text"
+                className="form-control form-control-lg"
+                placeholder="Search products..."
+                value={filters.search}
+                onChange={(e) => handleFilterChange('search', e.target.value)}
+              />
+              {filters.search && (
+                <button
+                  className="btn btn-outline-secondary"
+                  onClick={() => handleFilterChange('search', '')}
+                >
+                  <i className="bi bi-x"></i>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="row">
+          {/* Filters Sidebar */}
+          <div className="col-lg-3 col-md-4 mb-4">
+            <div className="card shadow-sm">
+              <div className="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 className="mb-0 fw-semibold" style={{ fontSize: '1.1rem' }}>
+                  <i className="bi bi-funnel me-2"></i>
+                  Filters
+                </h5>
+                <button
+                  className="btn btn-sm btn-outline-secondary d-lg-none"
+                  onClick={() => setShowFilters(!showFilters)}
+                >
+                  <i className={`bi bi-chevron-${showFilters ? 'up' : 'down'}`}></i>
+                </button>
+              </div>
+
+              <div className={`card-body ${showFilters ? '' : 'd-none d-lg-block'}`}>
+                {/* Clear Filters Button */}
+                {hasActiveFilters && (
+                  <button
+                    className="btn btn-outline-danger btn-sm w-100 mb-3"
+                    onClick={clearFilters}
+                  >
+                    <i className="bi bi-x-circle me-2"></i>
+                    Clear All Filters
+                  </button>
+                )}
+
+                {/* Category Filter */}
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">
+                    <i className="bi bi-grid me-2"></i>
+                    Category
+                  </label>
+                  <select
+                    className="form-select"
+                    value={filters.categoryId}
+                    onChange={(e) => handleFilterChange('categoryId', e.target.value)}
+                  >
+                    <option value="">All Categories</option>
+                    {categories.map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Brand Filter */}
+                {filterOptions?.brands && filterOptions.brands.length > 0 && (
+                  <div className="mb-3">
+                    <label className="form-label fw-semibold">
+                      <i className="bi bi-tag me-2"></i>
+                      Brand
+                    </label>
+                    <select
+                      className="form-select"
+                      value={filters.brandName}
+                      onChange={(e) => handleFilterChange('brandName', e.target.value)}
+                    >
+                      <option value="">All Brands</option>
+                      {filterOptions.brands.map((brand, idx) => (
+                        <option key={idx} value={brand}>{brand}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Model Filter */}
+                {filterOptions?.models && filterOptions.models.length > 0 && (
+                  <div className="mb-3">
+                    <label className="form-label fw-semibold">
+                      <i className="bi bi-phone me-2"></i>
+                      Model
+                    </label>
+                    <select
+                      className="form-select"
+                      value={filters.modelName}
+                      onChange={(e) => handleFilterChange('modelName', e.target.value)}
+                    >
+                      <option value="">All Models</option>
+                      {filterOptions.models.map((model, idx) => (
+                        <option key={idx} value={model}>{model}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Price Range */}
+                {filterOptions?.priceRange && (
+                  <div className="mb-3">
+                    <label className="form-label fw-semibold">
+                      <i className="bi bi-currency-rupee me-2"></i>
+                      Price Range
+                    </label>
+                    <div className="row g-2">
+                      <div className="col-6">
+                        <input
+                          type="number"
+                          className="form-control form-control-sm"
+                          placeholder="Min"
+                          value={filters.minPrice}
+                          onChange={(e) => handleFilterChange('minPrice', e.target.value)}
+                          min="0"
+                        />
+                      </div>
+                      <div className="col-6">
+                        <input
+                          type="number"
+                          className="form-control form-control-sm"
+                          placeholder="Max"
+                          value={filters.maxPrice}
+                          onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
+                          min="0"
+                        />
+                      </div>
+                    </div>
+                    <small className="text-muted">
+                      Range: ₹{filterOptions.priceRange.min} - ₹{filterOptions.priceRange.max}
+                    </small>
+                  </div>
+                )}
+
+                {/* Stock Filter */}
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">
+                    <i className="bi bi-box-seam me-2"></i>
+                    Availability
+                  </label>
+                  <select
+                    className="form-select"
+                    value={filters.inStock}
+                    onChange={(e) => handleFilterChange('inStock', e.target.value)}
+                  >
+                    <option value="">All Products</option>
+                    <option value="true">In Stock</option>
+                    <option value="false">Out of Stock</option>
+                  </select>
+                </div>
+
+                {/* Color Filter */}
+                {filterOptions?.colors && filterOptions.colors.length > 0 && (
+                  <div className="mb-3">
+                    <label className="form-label fw-semibold">
+                      <i className="bi bi-palette me-2"></i>
+                      Color
+                    </label>
+                    <select
+                      className="form-select"
+                      value={filters.color}
+                      onChange={(e) => handleFilterChange('color', e.target.value)}
+                    >
+                      <option value="">All Colors</option>
+                      {filterOptions.colors.map((color, idx) => (
+                        <option key={idx} value={color}>{color}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Material Filter */}
+                {filterOptions?.materials && filterOptions.materials.length > 0 && (
+                  <div className="mb-3">
+                    <label className="form-label fw-semibold">
+                      <i className="bi bi-box me-2"></i>
+                      Material
+                    </label>
+                    <select
+                      className="form-select"
+                      value={filters.material}
+                      onChange={(e) => handleFilterChange('material', e.target.value)}
+                    >
+                      <option value="">All Materials</option>
+                      {filterOptions.materials.map((material, idx) => (
+                        <option key={idx} value={material}>{material}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Case Type Filter */}
+                {/** 
+                  {filterOptions?.caseTypes && filterOptions.caseTypes.length > 0 && (
+                    <div className="mb-3">
+                      <label className="form-label fw-semibold">
+                        <i className="bi bi-shield-check me-2"></i>
+                        Case Type
+                      </label>
+                      <select
+                        className="form-select"
+                        value={filters.caseType}
+                        onChange={(e) => handleFilterChange('caseType', e.target.value)}
+                      >
+                        <option value="">All Types</option>
+                        {filterOptions.caseTypes.map((type, idx) => (
+                          <option key={idx} value={type}>{stripMarkdownLabel(type)}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  */}
+              </div>
+            </div>
+          </div>
+
+          {/* Products Grid */}
+          <div className="col-lg-9 col-md-8">
+            {/* Sort and Results Info */}
+            <div className="card shadow-sm mb-4">
+              <div className="card-body">
+                <div className="row align-items-center">
+                  <div className="col-md-6 mb-2 mb-md-0">
+                    <span className="text-muted" style={{ fontSize: '0.95rem' }}>
+                      {pagination.totalItems > 0 ? (
+                        <>
+                          Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.totalItems)} of {pagination.totalItems} products
+                          {pagination.totalPages > 1 && ` (Page ${pagination.page} of ${pagination.totalPages})`}
+                        </>
+                      ) : (
+                        'No products found'
+                      )}
+                    </span>
+                  </div>
+                  <div className="col-md-6">
+                    <div className="d-flex align-items-center justify-content-md-end">
+                      <label className="form-label me-2 mb-0" style={{ fontSize: '0.95rem' }}>Sort by:</label>
+                      <select
+                        className="form-select form-select-sm"
+                        style={{ width: 'auto', minWidth: '150px', fontSize: '0.9rem' }}
+                        value={`${sortBy}-${sortOrder}`}
+                        onChange={(e) => {
+                          const [field, order] = e.target.value.split('-')
+                          setSortBy(field)
+                          setSortOrder(order)
+                        }}
+                      >
+                        <option value="createdAt-DESC">Newest First</option>
+                        <option value="createdAt-ASC">Oldest First</option>
+                        <option value="price-ASC">Price: Low to High</option>
+                        <option value="price-DESC">Price: High to Low</option>
+                        <option value="title-ASC">Name: A to Z</option>
+                        <option value="title-DESC">Name: Z to A</option>
+                        <option value="stock-DESC">Stock: High to Low</option>
+                        <option value="discount-DESC">Best Discount</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Loading State */}
+            {loading && products.length === 0 && (
+              <div className="text-center py-5">
+                <div className="spinner-border text-primary" role="status">
+                  <span className="visually-hidden">Loading...</span>
+                </div>
+                <p className="mt-3 text-muted">Loading products...</p>
+              </div>
+            )}
+
+            {/* Products Grid */}
+            {!loading && products.length > 0 && (
+              <div className="row">
+                {products.map((product) => {
+                  // console.log("product rating and review count", product.averageRating, product.reviewCount)
+                  const imagePath = product.thumbnailImage || product.images?.[0]?.imageUrl
+                  const imageUrl = getImageUrl(imagePath)
+                  const price = parseFloat(product.discountPrice || product.price)
+                  const originalPrice = product.discountPrice ? parseFloat(product.price) : null
+                  const inStock = product.stock && product.stock > 0
+
+                  return (
+                    <div key={product.id} className="col-lg-4 col-md-6 col-sm-6 mb-4">
+                      <div className="card h-100 shadow-sm product-card">
+                        <Link to={`/product/${product.id}`} className="text-decoration-none">
+                          <div className="position-relative" style={{ height: '250px', overflow: 'hidden', backgroundColor: '#f8f9fa' }}>
+                            <img
+                              src={imageUrl}
+                              alt={product.title}
+                              className="img-fluid w-100 h-100"
+                              style={{ objectFit: 'contain', padding: '10px' }}
+                              loading="lazy"
+                              decoding="async"
+                              onError={(e) => {
+                                e.target.src = fallbackImage
+                              }}
+                            />
+                            {originalPrice && (
+                              <span className="badge bg-danger position-absolute top-0 end-0 m-2">
+                                {Math.round(((originalPrice - price) / originalPrice) * 100)}% OFF
+                              </span>
+                            )}
+                            {!inStock && (
+                              <span className="badge bg-secondary position-absolute top-0 start-0 m-2">
+                                Out of Stock
+                              </span>
+                            )}
+                          </div>
+                        </Link>
+
+                        <div className="card-body d-flex flex-column">
+                          <Link to={`/product/${product.id}`} className="text-decoration-none text-dark">
+                            {product.sku && (
+                              <span className="product-card-brand d-block mb-1">{product.sku}</span>
+                            )}
+                            <h5 className="card-title mb-2 fw-semibold product-card-title">{product.title}</h5>
+                          </Link>
+
+                          {/* Case Details */}
+                          {product.caseDetails && (
+                            <p className="text-muted small mb-2">
+                              <i className="bi bi-tag me-1"></i>
+                              {product.caseDetails.brand?.name} {product.caseDetails.model?.name}
+                            </p>
+                          )}
+
+                          <div className="mt-auto">
+                            <div className="mb-2">
+                              <ProductRatingExpandable
+                                averageRating={ratingsMap[product.id]?.averageRating}
+                                totalCount={ratingsMap[product.id]?.reviewCount}
+                                productId={product.id}
+                                starSize="0.85rem"
+                              />
+                            </div>
+                            <div className="d-flex justify-content-between align-items-center mb-3">
+                              <div>
+                                <span className="h5 text-primary mb-0">{formatPrice(price)}</span>
+                                {originalPrice && (
+                                  <span className="text-muted text-decoration-line-through small ms-2">
+                                    {formatPrice(originalPrice)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="d-flex flex-column gap-2">
+                              <button
+                                className="btn btn-primary w-100 btn-add-to-cart"
+                                onClick={(e) => handleAddToCart(product, e)}
+                                disabled={!inStock}
+                              >
+                                {inStock ? 'Add to Cart' : 'Out of Stock'}
+                              </button>
+                              {inStock && (
+                                <button
+                                  className="btn btn-primary w-100 btn-buy-now"
+                                  onClick={(e) => handleBuyNow(product, e)}
+                                >
+                                  Buy Now
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* No Products Found */}
+            {!loading && products.length === 0 && (
+              <div className="text-center py-5">
+                <i className="bi bi-inbox text-muted" style={{ fontSize: '4rem' }}></i>
+                <h4 className="mt-3 fw-semibold" style={{ fontSize: '1.25rem' }}>No products found</h4>
+                <p className="text-muted" style={{ fontSize: '0.95rem' }}>Try adjusting your filters or search terms</p>
+                {hasActiveFilters && (
+                  <button className="btn btn-primary mt-3" onClick={clearFilters}>
+                    Clear All Filters
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Pagination */}
+            {!loading && pagination.totalPages > 1 && (
+              <div className="d-flex justify-content-center mt-4">
+                <nav aria-label="Page navigation">
+                  <ul className="pagination">
+                    <li className={`page-item ${pagination.page === 1 ? 'disabled' : ''}`}>
+                      <button
+                        className="page-link"
+                        onClick={() => {
+                          const newPage = Math.max(1, pagination.page - 1)
+                          setPagination(prev => ({ ...prev, page: newPage }))
+                          window.scrollTo({ top: 0, behavior: 'smooth' })
+                        }}
+                        disabled={pagination.page === 1}
+                      >
+                        <i className="bi bi-chevron-left"></i> Previous
+                      </button>
+                    </li>
+
+                    {[...Array(Math.min(5, pagination.totalPages))].map((_, i) => {
+                      let pageNum
+                      if (pagination.totalPages <= 5) {
+                        pageNum = i + 1
+                      } else if (pagination.page <= 3) {
+                        pageNum = i + 1
+                      } else if (pagination.page >= pagination.totalPages - 2) {
+                        pageNum = pagination.totalPages - 4 + i
+                      } else {
+                        pageNum = pagination.page - 2 + i
+                      }
+
+                      return (
+                        <li key={pageNum} className={`page-item ${pagination.page === pageNum ? 'active' : ''}`}>
+                          <button
+                            className="page-link"
+                            onClick={() => {
+                              setPagination(prev => ({ ...prev, page: pageNum }))
+                              window.scrollTo({ top: 0, behavior: 'smooth' })
+                            }}
+                          >
+                            {pageNum}
+                          </button>
+                        </li>
+                      )
+                    })}
+
+                    <li className={`page-item ${pagination.page === pagination.totalPages ? 'disabled' : ''}`}>
+                      <button
+                        className="page-link"
+                        onClick={() => {
+                          const newPage = Math.min(pagination.totalPages, pagination.page + 1)
+                          setPagination(prev => ({ ...prev, page: newPage }))
+                          window.scrollTo({ top: 0, behavior: 'smooth' })
+                        }}
+                        disabled={pagination.page === pagination.totalPages}
+                      >
+                        Next <i className="bi bi-chevron-right"></i>
+                      </button>
+                    </li>
+                  </ul>
+                </nav>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default Shop

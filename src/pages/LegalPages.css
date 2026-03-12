@@ -1,0 +1,72 @@
+/* Legal pages – black text, simple, responsive */
+.legal-container {
+  min-height: 100vh;
+  background: #fff;
+}
+
+.legal-card {
+  border-radius: 0;
+  overflow: hidden;
+  border: 1px solid #dee2e6;
+}
+
+.legal-card .card-header {
+  border-radius: 0;
+  background: #fff;
+  border-bottom: 1px solid #dee2e6;
+  color: #000;
+}
+
+.legal-content,
+.legal-section {
+  color: #000;
+}
+
+.legal-section {
+  position: relative;
+}
+
+.custom-list {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.custom-list li {
+  padding-left: 1.25rem;
+  margin-bottom: 0.5rem;
+  position: relative;
+  color: #000;
+}
+
+.custom-list li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: #000;
+}
+
+.legal-container a {
+  color: #000;
+  text-decoration: underline;
+}
+
+.legal-container a:hover {
+  color: #333;
+}
+
+@media (max-width: 768px) {
+  .legal-card .card-body {
+    padding: 1rem !important;
+  }
+}
+
+@media print {
+  .legal-card {
+    box-shadow: none !important;
+    border: 1px solid #dee2e6 !important;
+  }
+  .card-footer .btn,
+  .card-footer a[href] {
+    display: none !important;
+  }
+}
