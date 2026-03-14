@@ -3,7 +3,7 @@
  * Modular: create shipment, check pincode, TAT, print label, track.
  */
 import React, { useState, useEffect } from 'react';
-import { shippingAPI } from "../../utils/api";
+import { shippingAPI, API_BASE_URL, BASE_URL } from "../../utils/api";
 
 export default function OrderShippingCard({ order, onShipmentCreated }) {
   const [config, setConfig] = useState(null);
@@ -53,8 +53,23 @@ export default function OrderShippingCard({ order, onShipmentCreated }) {
     try {
       const data = await shippingAPI.createShipment(order.id, { fetchWaybill: false });
       if (data?.waybill || data?.awb) {
+        // Backend now returns a labelDownloadUrl pointing to /api/orders/:id/shipping-label/download
+        const rawPath = data.labelDownloadUrl || data.labelUrl || '';
+        let fullLabelUrl = null;
+        if (rawPath) {
+          const normalized = String(rawPath);
+          const isAbsolute = normalized.startsWith('http://') || normalized.startsWith('https://');
+          if (isAbsolute) {
+            fullLabelUrl = normalized;
+          } else if (normalized.startsWith('/api/')) {
+            fullLabelUrl = `${BASE_URL}${normalized}`;
+          } else {
+            fullLabelUrl = `${API_BASE_URL}${normalized.startsWith('/') ? '' : '/'}${normalized}`;
+          }
+        }
+
         showMessage('success', `Shipment created. AWB: ${data.waybill || data.awb}`);
-        onShipmentCreated?.({ waybill: data.waybill, awb: data.awb, labelUrl: data.labelUrl });
+        onShipmentCreated?.({ waybill: data.waybill, awb: data.awb, labelUrl: fullLabelUrl });
       } else {
         showMessage('info', data?.message || 'Shipment request sent.');
         onShipmentCreated?.();
@@ -116,22 +131,20 @@ export default function OrderShippingCard({ order, onShipmentCreated }) {
 
   const handlePrintLabel = async () => {
     const wb = order?.awbCode;
-    if (!wb) {
+    if (!wb || !order?.id) {
       showMessage('warning', 'No AWB for this order. Create shipment first.');
       return;
     }
     setActionLoading('label');
     setMessage({ type: '', text: '' });
     try {
-      const data = await shippingAPI.getLabel(wb);
-      if (data?.labelUrl) {
-        window.open(data.labelUrl, '_blank', 'noopener,noreferrer');
-        showMessage('success', 'Label opened in new tab.');
-      } else if (data?.labelData) {
-        showMessage('info', 'Label data loaded. Use backend URL to print.');
-      }
+      // Prefer backend shipping-label download route so we never expose Delhivery tokenized URLs directly.
+      const path = `/orders/${order.id}/shipping-label/download`;
+      const url = `${API_BASE_URL}${path}`;
+      window.open(url, '_blank', 'noopener,noreferrer');
+      showMessage('success', 'Label download opened in new tab.');
     } catch (err) {
-      showMessage('danger', err.message || 'Label fetch failed');
+      showMessage('danger', err.message || 'Label open failed');
     } finally {
       setActionLoading(null);
     }

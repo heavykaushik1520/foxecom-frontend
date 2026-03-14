@@ -147,7 +147,7 @@ const UserView = () => {
                     <tbody>
                       {orders.map((order) => (
                         <tr key={order.id}>
-                          <td>#{order.id}</td>
+                          <td>#{order.orderNumber || order.id}</td>
                           <td>{formatCurrency(order.totalAmount)}</td>
                           <td>
                             <span

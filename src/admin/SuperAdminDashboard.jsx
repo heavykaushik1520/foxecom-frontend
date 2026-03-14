@@ -264,7 +264,7 @@ function SuperAdminDashboard() {
                       data.orders.data.map((order) => (
                         <React.Fragment key={order.id}>
                           <tr>
-                            <td className="ps-3">{order.id}</td>
+                            <td className="ps-3">{order.orderNumber || order.id}</td>
                             <td>{[order.firstName, order.lastName].filter(Boolean).join(" ") || "—"}</td>
                             <td>{order.emailAddress}</td>
                             <td>{order.mobileNumber ?? "—"}</td>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import MDEditor from "@uiw/react-md-editor";
 import "@uiw/react-md-editor/markdown-editor.css";
@@ -28,9 +28,20 @@ const EditProduct = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const newImagePreviewUrlsRef = useRef([]);
+
   useEffect(() => {
     fetchData();
   }, [id]);
+
+  // Create/revoke object URLs for new image previews to avoid memory leaks
+  if (images.length !== newImagePreviewUrlsRef.current.length || images.some((f, i) => newImagePreviewUrlsRef.current[i]?.file !== f)) {
+    newImagePreviewUrlsRef.current.forEach((o) => URL.revokeObjectURL(o.url));
+    newImagePreviewUrlsRef.current = images.map((file) => ({ file, url: URL.createObjectURL(file) }));
+  }
+  useEffect(() => {
+    return () => newImagePreviewUrlsRef.current.forEach((o) => URL.revokeObjectURL(o.url));
+  }, []);
 
   const fetchData = async () => {
     try {
@@ -84,21 +95,30 @@ const EditProduct = () => {
   };
 
   const handleDeleteImage = (imageId) => {
+    if (imagesToDelete.includes(imageId)) return;
     setImagesToDelete([...imagesToDelete, imageId]);
-    setExistingImages(existingImages.filter(img => img.id !== imageId));
   };
+
+  const handleRestoreImage = (imageId) => {
+    setImagesToDelete(imagesToDelete.filter((id) => id !== imageId));
+  };
+
+  const removeNewImage = (index) => {
+    setImages(images.filter((_, i) => i !== index));
+  };
+
+  const currentGalleryCount = existingImages.length - imagesToDelete.length + images.length;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!title || !categoryId || !price) {
-      setError("Title, category, and price are required");
+      setError("Title, category, and price are required.");
       return;
     }
 
-    const finalImageCount = existingImages.length - imagesToDelete.length + images.length;
-    if (finalImageCount < 2 || finalImageCount > 11) {
-      setError("Product must have between 2 and 10 gallery images");
+    if (currentGalleryCount < 2 || currentGalleryCount > 10) {
+      setError("Product must have between 2 and 10 gallery images. Current total: " + currentGalleryCount + ".");
       return;
     }
 
@@ -328,44 +348,112 @@ const EditProduct = () => {
 
             <div className="mb-3">
               <label className="form-label">
-                Gallery Images (2-10 images required)
+                Gallery Images (2–10 images required)
               </label>
               <div className="mb-2">
                 <input
                   type="file"
                   className="form-control"
-                  accept="image/*"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
                   multiple
                   onChange={handleImagesChange}
                 />
                 <small className="form-text text-muted">
-                  Current images: {existingImages.length - imagesToDelete.length}, 
-                  New images: {images.length}, 
-                  Total after update: {existingImages.length - imagesToDelete.length + images.length}
+                  Keep: {existingImages.length - imagesToDelete.length} · New: {images.length} · Total: {currentGalleryCount}. Max 10 images, 20MB each.
                 </small>
+                {(currentGalleryCount < 2 || currentGalleryCount > 10) && (
+                  <div className="text-danger small mt-1">
+                    {currentGalleryCount < 2 ? "Add more images or restore some so you have at least 2." : "Remove or un-select images so you have at most 10."}
+                  </div>
+                )}
               </div>
 
-              {existingImages.length > 0 && (
-                <div className="row g-2 mt-2">
-                  {existingImages.map((image) => (
-                    <div key={image.id} className="col-3">
-                      <div className="position-relative">
-                        <img
-                          src={getImageUrl(image.imageUrl)}
-                          alt="Product"
-                          className="img-thumbnail"
-                          style={{ width: "100%", height: "100px", objectFit: "cover" }}
-                        />
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-danger position-absolute top-0 end-0"
-                          onClick={() => handleDeleteImage(image.id)}
-                        >
-                          ×
-                        </button>
+              {existingImages.filter((img) => !imagesToDelete.includes(img.id)).length > 0 && (
+                <div className="mt-2">
+                  <strong className="small text-muted">Current gallery (click × to remove)</strong>
+                  <div className="row g-2 mt-1">
+                    {existingImages
+                      .filter((img) => !imagesToDelete.includes(img.id))
+                      .map((image) => (
+                        <div key={image.id} className="col-3">
+                          <div className="position-relative">
+                            <img
+                              src={getImageUrl(image.imageUrl)}
+                              alt="Product"
+                              className="img-thumbnail"
+                              style={{ width: "100%", height: "100px", objectFit: "cover" }}
+                            />
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-danger position-absolute top-0 end-0"
+                              onClick={() => handleDeleteImage(image.id)}
+                              title="Remove from product"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {imagesToDelete.length > 0 && (
+                <div className="mt-2">
+                  <strong className="small text-muted">Removed (click Restore to keep)</strong>
+                  <div className="row g-2 mt-1">
+                    {existingImages
+                      .filter((img) => imagesToDelete.includes(img.id))
+                      .map((image) => (
+                        <div key={image.id} className="col-3">
+                          <div className="position-relative opacity-75">
+                            <img
+                              src={getImageUrl(image.imageUrl)}
+                              alt="Removed"
+                              className="img-thumbnail"
+                              style={{ width: "100%", height: "100px", objectFit: "cover" }}
+                            />
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-success position-absolute top-0 end-0"
+                              onClick={() => handleRestoreImage(image.id)}
+                              title="Restore image"
+                            >
+                              Restore
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {images.length > 0 && (
+                <div className="mt-2">
+                  <strong className="small text-muted">New images (click × to remove from upload)</strong>
+                  <div className="row g-2 mt-1">
+                    {images.map((file, index) => (
+                      <div key={`new-${index}-${file.name}`} className="col-3">
+                        <div className="position-relative">
+                          <img
+                            src={newImagePreviewUrlsRef.current[index]?.url || ""}
+                            alt={`New ${index + 1}`}
+                            className="img-thumbnail"
+                            style={{ width: "100%", height: "100px", objectFit: "cover" }}
+                          />
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-danger position-absolute top-0 end-0"
+                            onClick={() => removeNewImage(index)}
+                            title="Remove from upload"
+                          >
+                            ×
+                          </button>
+                          <small className="d-block text-muted text-truncate" style={{ maxWidth: "100%" }}>{file.name}</small>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

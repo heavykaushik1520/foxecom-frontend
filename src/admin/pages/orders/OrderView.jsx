@@ -151,7 +151,7 @@ const OrderView = () => {
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h4>Order Details - #{order.id}</h4>
+        <h4>Order Details - #{order.orderNumber || order.id}</h4>
         <button
           className="btn btn-secondary"
           onClick={() => navigate("/admin/orders")}
@@ -298,7 +298,7 @@ const OrderView = () => {
             </div>
             <div className="card-body">
               <p>
-                <strong>Order ID:</strong> #{order.id}
+                <strong>Order ID:</strong> #{order.orderNumber || order.id}
               </p>
               <p>
                 <strong>Status:</strong>{" "}

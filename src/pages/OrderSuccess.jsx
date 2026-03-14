@@ -207,7 +207,7 @@ const OrderSuccess = () => {
             Thank you for your order. We've received your order and will begin processing it right away.
           </p>
           <p className="text-muted" style={{ fontSize: '0.95rem' }}>
-            Order ID: <strong>#{order.id}</strong>
+            Order ID: <strong>#{order.orderNumber || order.id}</strong>
           </p>
         </div>
 
@@ -221,7 +221,7 @@ const OrderSuccess = () => {
               <div className="card-body">
                 <div className="row mb-3">
                   <div className="col-md-6">
-                    <strong>Order ID:</strong> #{order.id}
+                    <strong>Order ID:</strong> #{order.orderNumber || order.id}
                   </div>
                   <div className="col-md-6">
                     <strong>Order Date:</strong> {formatDate(order.createdAt)}
@@ -409,7 +409,7 @@ const OrderSuccess = () => {
                               {order.createdAt ? formatDate(order.createdAt) : 'N/A'}
                             </div>
                             <div>
-                              <strong>Order No:</strong> #{order.id}
+                              <strong>Order Number:</strong> #{order.orderNumber || order.id}
                             </div>
                             <div>
                               <strong>FOXECOM IP:</strong> {foxecomIp || 'N/A'}
@@ -534,11 +534,11 @@ const OrderSuccess = () => {
                 </ul>
                 <hr />
                 <div className="d-grid gap-2">
-                  {/* {(order.awbCode || order.shipmentId) && (
+                  {(order.awbCode || order.shipmentId) && (
                     <Link to={`/order/${order.id}/track`} className="btn btn-info">
                       Track this order
                     </Link>
-                  )} */}
+                  )}
                   <Link to="/my-orders" className="btn btn-primary">
                     View All Orders
                   </Link>

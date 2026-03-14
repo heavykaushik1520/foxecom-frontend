@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { orderAPI } from '../utils/api'
+import { orderAPI, API_BASE_URL, BASE_URL } from '../utils/api'
 
 const TrackOrder = () => {
   const { id } = useParams()
@@ -55,9 +55,27 @@ const TrackOrder = () => {
     setLabelLoading(true)
     try {
       const data = await orderAPI.getShippingLabel(order.id)
-      if (data?.labelUrl) {
-        setLabelUrl(data.labelUrl)
-        window.open(data.labelUrl, '_blank', 'noopener,noreferrer')
+
+      // Backend returns either a direct labelUrl or a backend downloadUrl (usually starting with /api/...)
+      const rawUrl = data?.labelUrl || data?.downloadUrl
+      if (rawUrl) {
+        const normalizedPath = String(rawUrl)
+        const isAbsolute =
+          normalizedPath.startsWith('http://') || normalizedPath.startsWith('https://')
+
+        let fullUrl = normalizedPath
+        if (!isAbsolute) {
+          if (normalizedPath.startsWith('/api/')) {
+            // Hit backend API root directly (BASE_URL has no /api suffix)
+            fullUrl = `${BASE_URL}${normalizedPath}`
+          } else {
+            // Relative to API_BASE_URL (which already includes /api)
+            fullUrl = `${API_BASE_URL}${normalizedPath.startsWith('/') ? '' : '/'}${normalizedPath}`
+          }
+        }
+
+        setLabelUrl(fullUrl)
+        window.open(fullUrl, '_blank', 'noopener,noreferrer')
       }
     } catch (err) {
       console.error('Get shipping label failed:', err)
@@ -173,7 +191,7 @@ const TrackOrder = () => {
                 <div className="row g-3">
                   <div className="col-6 col-md-4">
                     <span className="text-muted small d-block">Order ID</span>
-                    <strong>#{order.id}</strong>
+                    <strong>#{order.orderNumber || order.id}</strong>
                   </div>
                   <div className="col-6 col-md-4">
                     <span className="text-muted small d-block">Status</span>
@@ -238,7 +256,7 @@ const TrackOrder = () => {
                   <h6 className="fw-semibold">Shipment not created yet</h6>
                   <p className="text-muted small mb-0">
                     {order.status === 'paid'
-                      ? <>Shipment is usually created automatically after payment. Wait a minute and <strong>refresh</strong>, or contact support for order #{order.id}.</>
+                      ? <>Shipment is usually created automatically after payment. Wait a minute and <strong>refresh</strong>, or contact support for order #{order.orderNumber || order.id}.</>
                       : 'Check back after payment or contact support.'}
                   </p>
                   <button type="button" className="btn btn-outline-primary btn-sm mt-3" onClick={handleRefresh}>Refresh</button>

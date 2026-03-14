@@ -294,7 +294,7 @@ const OrdersDashboard = () => {
                   <tbody>
                     {orders.map((order) => (
                       <tr key={order.id}>
-                        <td>#{order.id}</td>
+                        <td>#{order.orderNumber || order.id}</td>
                         <td>{order.user?.email || order.emailAddress || "N/A"}</td>
                         <td className="fw-semibold">{formatCurrency(order.totalAmount)}</td>
                         <td>

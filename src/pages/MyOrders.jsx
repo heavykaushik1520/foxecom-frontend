@@ -163,7 +163,7 @@ const MyOrders = () => {
                   <div className="row align-items-center g-2">
                     <div className="col-12 col-md-6">
                       <h5 className="mb-0 mb-md-0" style={{ fontSize: 'clamp(0.95rem, 2.5vw, 1.1rem)' }}>
-                        Order #{order.id}
+                        Order #{order.orderNumber || order.id}
                         <span className={`badge bg-${getStatusBadge(order.status)} ms-2`} style={{ fontSize: 'clamp(0.7rem, 1.8vw, 0.85rem)' }}>
                           {order.status?.toUpperCase()}
                         </span>
@@ -252,7 +252,7 @@ const MyOrders = () => {
                         >
                           View Details
                         </Link>
-                        {/* {(order.awbCode || order.shipmentId) && (
+                        {(order.awbCode || order.shipmentId) && (
                           <Link
                             to={`/order/${order.id}/track`}
                             className="btn btn-outline-info btn-sm my-orders-action-btn w-100 w-md-auto"
@@ -260,7 +260,7 @@ const MyOrders = () => {
                           >
                             Track Order
                           </Link>
-                        )} */}
+                        )}
                         {order.status === 'pending' && (
                           <button
                             className="btn btn-outline-danger btn-sm my-orders-action-btn w-100 w-md-auto"
