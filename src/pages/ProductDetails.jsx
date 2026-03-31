@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import MarkdownPreview from "@uiw/react-markdown-preview";
 import "@uiw/react-markdown-preview/markdown.css";
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -9,17 +9,44 @@ import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import 'swiper/css/thumbs';
 import 'swiper/css/zoom';
-import { productAPI, getImageUrl, reviewAPI } from "../utils/api";
+import { productAPI, getImageUrl, reviewAPI, orderAPI } from "../utils/api";
+import { getProductPathSegment } from "../utils/productPath";
 import { useCart } from "../contexts/CartContext";
 import SimilarProducts from "../components/SimilarProducts";
 import ProductDetailsTrustStrip from "../components/ProductDetailsTrustStrip";
+import { StarDisplay } from "../components/RatingBreakdownModal";
 import fallbackImage from "../assest/images/product-item1.jpg";
 
 const ProductDetails = () => {
-  const { id } = useParams();
+  const { id: slugOrId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isLoggedIn = typeof window !== "undefined" ? !!localStorage.getItem("token") : false;
   const { addToCart, isInCart, buyNow } = useCart();
   const [product, setProduct] = useState(null);
+
+  const upsertCanonical = (slug) => {
+    try {
+      if (typeof document === "undefined" || !slug) return;
+      const href = `${window.location.origin}/product/${slug}`;
+      let link = document.querySelector('link[rel="canonical"]');
+      if (!link) {
+        link = document.createElement("link");
+        link.setAttribute("rel", "canonical");
+        document.head.appendChild(link);
+      }
+      link.setAttribute("href", href);
+    } catch {
+      // No-op: SEO meta updates shouldn't break the product page
+    }
+  };
+
+  const numericProductId = useMemo(() => {
+    if (!slugOrId) return null;
+    const s = String(slugOrId).trim();
+    if (/^\d+$/.test(s)) return parseInt(s, 10);
+    return product?.id ?? null;
+  }, [slugOrId, product?.id]);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -27,6 +54,8 @@ const ProductDetails = () => {
   const scrollWrapRef = useRef(null);
   const accordionRef = useRef(null);
   const layoutRowRef = useRef(null);
+  const lastTrackedProductIdRef = useRef(null);
+  const reviewFormRef = useRef(null);
   const [zoomState, setZoomState] = useState({
     isZoomed: false,
     mouseX: 0,
@@ -36,6 +65,7 @@ const ProductDetails = () => {
   });
   const [isMobile, setIsMobile] = useState(false);
   const [thumbsSwiper, setThumbsSwiper] = useState(null);
+  const [isRatingOverlayOpen, setIsRatingOverlayOpen] = useState(false);
 
   // Review state (admin-managed reviews; display only)
   const [reviews, setReviews] = useState([]);
@@ -44,13 +74,146 @@ const ProductDetails = () => {
   const [distributionPercent, setDistributionPercent] = useState({});
   const [loadingReviews, setLoadingReviews] = useState(false);
 
-  useEffect(() => {
-    loadProduct();
-  }, [id]);
+  // Customer review form state
+  const [myReview, setMyReview] = useState(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewText, setReviewText] = useState("");
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewSubmitError, setReviewSubmitError] = useState("");
+
+  const [canReviewProduct, setCanReviewProduct] = useState(false);
+  const [loadingEligibility, setLoadingEligibility] = useState(false);
+
+  const maskDisplayName = (value) => {
+    const v = String(value || "").trim();
+    if (!v) return "Customer";
+    if (v.includes("*")) return v; // already masked by backend
+    if (!v.includes("@")) {
+      if (v.length <= 2) return `${v[0] || ""}***`;
+      const first = v[0];
+      const last = v[v.length - 1];
+      const starCount = v.length - 2 >= 7 ? 7 : Math.max(1, v.length - 2);
+      return `${first}${"*".repeat(starCount)}${last}`;
+    }
+    const [userPart, domain] = v.split("@");
+    if (!domain) return v;
+    const first = userPart?.[0] || "";
+    const last = userPart?.[userPart.length - 1] || "";
+    const starCount =
+      (userPart?.length || 0) - 2 >= 7
+        ? 7
+        : Math.max(1, (userPart?.length || 0) - 2);
+    return `${first}${"*".repeat(starCount)}${last}@${domain}`;
+  };
 
   useEffect(() => {
-    if (id) loadReviews();
-  }, [id]);
+    loadProduct();
+  }, [slugOrId]);
+
+  useEffect(() => {
+    if (numericProductId != null) loadReviews();
+  }, [numericProductId]);
+
+  // Deep-link support: /product/:id?writeReview=1
+  useEffect(() => {
+    const params = new URLSearchParams(location.search || "");
+    if (params.get("writeReview") !== "1") return;
+
+    // Give the DOM a moment to paint before scrolling.
+    setTimeout(() => {
+      if (reviewFormRef.current) {
+        reviewFormRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 250);
+  }, [location.search]);
+
+  // Load the currently logged-in user's review (if any) to prefill the form.
+  useEffect(() => {
+    if (numericProductId == null) return;
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    if (!token) return;
+
+    const loadMyReview = async () => {
+      try {
+        const data = await reviewAPI.getMyReviews();
+        const reviewsList = data?.reviews || [];
+        const match = reviewsList.find(
+          (r) => String(r?.product?.id) === String(numericProductId)
+        );
+
+        if (match) {
+          setMyReview(match);
+          setReviewRating(match.rating || 5);
+          setReviewText(match.reviewText || "");
+        } else {
+          setMyReview(null);
+          setReviewRating(5);
+          setReviewText("");
+        }
+      } catch (err) {
+        console.error("Failed to load my reviews:", err);
+      }
+    };
+
+    loadMyReview();
+  }, [numericProductId]);
+
+  // Only show the review form if the logged-in customer has purchased this product.
+  useEffect(() => {
+    const checkEligibility = async () => {
+      if (numericProductId == null || !isLoggedIn) {
+        setCanReviewProduct(false);
+        return;
+      }
+
+      setLoadingEligibility(true);
+      try {
+        const orders = await orderAPI.getMyOrders({
+          page: 1,
+          limit: 50,
+        });
+
+        const match = (orders || []).some((o) => {
+          const st = o?.status;
+          if (st !== "paid" && st !== "delivered") return false;
+          const items = o?.orderItems || [];
+          return items.some((it) => String(it?.product?.id || it?.productId) === String(numericProductId));
+        });
+
+        setCanReviewProduct(Boolean(match));
+      } catch (err) {
+        console.error("Failed to check review eligibility:", err);
+        setCanReviewProduct(false);
+      } finally {
+        setLoadingEligibility(false);
+      }
+    };
+
+    checkEligibility();
+  }, [numericProductId, isLoggedIn]);
+
+  // Fire Meta Pixel ViewContent when the product finishes loading.
+  useEffect(() => {
+    if (!product) return;
+    if (typeof window === "undefined") return;
+    if (typeof window.fbq !== "function") return;
+
+    const resolvedProductId = String(product.id);
+
+    if (lastTrackedProductIdRef.current === resolvedProductId) return;
+    lastTrackedProductIdRef.current = resolvedProductId;
+
+    const valueRaw = parseFloat(product.discountPrice || product.price || 0);
+    const value = Number.isFinite(valueRaw) ? valueRaw : 0;
+
+    window.fbq("track", "ViewContent", {
+      content_ids: [resolvedProductId],
+      content_name: product.title || "",
+      content_type: "product",
+      value,
+      currency: "INR",
+    });
+  }, [product]);
 
   // Detect mobile viewport
   useEffect(() => {
@@ -173,7 +336,19 @@ const ProductDetails = () => {
   const loadProduct = async () => {
     try {
       setLoading(true);
-      const productData = await productAPI.getById(id);
+      const productData = await productAPI.getById(slugOrId);
+
+      // SEO/canonical safeguard:
+      // If the user opened the numeric ID URL but this product has a slug,
+      // immediately move them to the slug-based URL and do not render content on /product/:id.
+      const isNumericRouteParam = /^\d+$/.test(String(slugOrId || "").trim());
+      const slug = productData?.slug ? String(productData.slug).trim() : "";
+      if (isNumericRouteParam && slug && slug !== String(slugOrId)) {
+        upsertCanonical(slug);
+        navigate(`/product/${slug}${location.search || ""}`, { replace: true });
+        return;
+      }
+
       setProduct(productData);
       setSelectedImage(0);
     } catch (error) {
@@ -188,6 +363,22 @@ const ProductDetails = () => {
     if (product) {
       const success = await addToCart(product, quantity);
       if (success) {
+        if (typeof window !== "undefined" && typeof window.fbq === "function") {
+          const resolvedProductId = product.id;
+          const unitValueRaw = parseFloat(
+            product.discountPrice || product.price || 0
+          );
+          const unitValue = Number.isFinite(unitValueRaw) ? unitValueRaw : 0;
+
+          window.fbq("track", "AddToCart", {
+            content_ids: [String(resolvedProductId)],
+            content_name: product.title || "",
+            content_type: "product",
+            value: unitValue * quantity,
+            currency: "INR",
+          });
+        }
+
         alert(`${product.title} added to cart!`);
       }
     }
@@ -200,7 +391,7 @@ const ProductDetails = () => {
     const token = localStorage.getItem('token');
     if (!token) {
       alert('Please login to proceed with Buy Now');
-      localStorage.setItem('redirectAfterLogin', `/product/${product.id}`);
+      localStorage.setItem('redirectAfterLogin', `/product/${getProductPathSegment(product)}`);
       navigate('/login');
       return;
     }
@@ -241,9 +432,10 @@ const ProductDetails = () => {
   };
 
   const loadReviews = async () => {
+    if (numericProductId == null) return;
     try {
       setLoadingReviews(true);
-      const data = await reviewAPI.getByProduct(id);
+      const data = await reviewAPI.getByProduct(numericProductId);
       const revs = data.reviews || [];
       setReviews(revs);
       setAverageRating(data.averageRating || 0);
@@ -275,6 +467,63 @@ const ProductDetails = () => {
       setDistributionPercent({});
     } finally {
       setLoadingReviews(false);
+    }
+  };
+
+  const handleLoginForReview = () => {
+    const redirectTo = `/product/${product ? getProductPathSegment(product) : slugOrId}?writeReview=1`;
+    localStorage.setItem("redirectAfterLogin", redirectTo);
+    navigate("/login");
+  };
+
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+    setReviewSubmitError("");
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      handleLoginForReview();
+      return;
+    }
+
+    if (numericProductId == null) {
+      setReviewSubmitError("Product is still loading. Try again in a moment.");
+      return;
+    }
+
+    if (!canReviewProduct && !myReview) {
+      setReviewSubmitError("You can only review products you have purchased.");
+      return;
+    }
+
+    const safeRating = Math.min(5, Math.max(1, parseInt(reviewRating, 10)));
+    if (!Number.isFinite(safeRating)) {
+      setReviewSubmitError("Please select a star rating.");
+      return;
+    }
+
+    const trimmedText = String(reviewText || "").trim();
+
+    try {
+      setReviewSubmitting(true);
+      await reviewAPI.createOrUpdateCustomerReview(numericProductId, {
+        rating: safeRating,
+        reviewText: trimmedText,
+      });
+
+      // Refresh the public review list (includes your just-submitted review).
+      await loadReviews();
+      setMyReview({
+        product: { id: product?.id ?? numericProductId },
+        rating: safeRating,
+        reviewText: trimmedText,
+        isVerifiedPurchase: true,
+      });
+      setReviewSubmitError("");
+    } catch (err) {
+      setReviewSubmitError(err?.message || "Failed to submit review.");
+    } finally {
+      setReviewSubmitting(false);
     }
   };
 
@@ -344,8 +593,19 @@ const ProductDetails = () => {
     : null;
   const inStock = product.stock && product.stock > 0;
 
+  const formattedReviewCount = totalReviewCount
+    ? totalReviewCount.toLocaleString("en-IN")
+    : "0";
+  const hasRatings = totalReviewCount > 0;
+
+  const goToReviews = () => {
+    if (typeof document === "undefined") return;
+    const el = document.getElementById("reviews");
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   return (
-    <div className="padding-large">
+    <div className="padding-large product-detail-page">
       <div className="container">
         <nav aria-label="breadcrumb" className="mb-4 d-none d-md-block">
           <ol className="breadcrumb">
@@ -569,9 +829,15 @@ const ProductDetails = () => {
                 .product-detail-swiper .swiper-pagination-bullet {
                   background: var(--primary-color, #89bb56);
                   opacity: 0.5;
+                  width: 8px;
+                  height: 8px;
+                  border-radius: 4px;
                 }
                 .product-detail-swiper .swiper-pagination-bullet-active {
                   opacity: 1;
+                  width: 16px;
+                  height: 8px;
+                  border-radius: 4px;
                 }
                 @media (max-width: 767px) {
                   .product-images {
@@ -596,35 +862,140 @@ const ProductDetails = () => {
                 {product.title}
               </h1>
 
-              {product.sku && (
-                <p className="text-muted mb-2 product-detail-sku">
-                  <span className="fw-medium">{product.sku}</span>
-                </p>
+              {hasRatings && (
+                <div
+                  className={`product-detail-rating-hover-wrap${
+                    isRatingOverlayOpen ? " is-open" : ""
+                  }`}
+                >
+                  <button
+                    type="button"
+                    className="product-detail-rating-trigger"
+                    aria-label={`Rated ${Number(averageRating).toFixed(1)} out of 5 stars by ${formattedReviewCount} customers`}
+                    onClick={(e) => {
+                      // On mobile, there is no hover; toggle overlay on tap.
+                      if (!isMobile) return;
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsRatingOverlayOpen((v) => !v);
+                    }}
+                  >
+                    <StarDisplay
+                      rating={averageRating}
+                      size="var(--product-detail-rating-star-size)"
+                      className="product-detail-rating-stars"
+                    />
+                    <span className="product-detail-rating-count">
+                      ({formattedReviewCount})
+                    </span>
+                  </button>
+
+                  <div
+                    className="product-detail-rating-hover-overlay"
+                    role="tooltip"
+                  >
+                    {isMobile && (
+                      <button
+                        type="button"
+                        className="product-detail-rating-overlay-close-mobile"
+                        aria-label="Close"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setIsRatingOverlayOpen(false);
+                        }}
+                      >
+                        X
+                      </button>
+                    )}
+                    <div className="product-detail-rating-overlay-header">
+                      <div className="product-detail-rating-overlay-header-top">
+                        <StarDisplay
+                          rating={averageRating}
+                          size="var(--product-detail-rating-overlay-star-size)"
+                        />
+                        <span className="product-detail-rating-overlay-average">
+                          {Number(averageRating).toFixed(1)} out of 5
+                        </span>
+                      </div>
+                      <div className="product-detail-rating-overlay-sub">
+                        {formattedReviewCount} global ratings
+                      </div>
+                    </div>
+
+                    <div className="product-detail-rating-overlay-bars">
+                      {[5, 4, 3, 2, 1].map((star) => {
+                        const percent = distributionPercent[star] ?? 0;
+                        return (
+                          <div
+                            key={star}
+                            className="product-detail-rating-overlay-row"
+                          >
+                            <span className="product-detail-rating-overlay-star-label">
+                              {star} star
+                            </span>
+                            <div className="product-detail-rating-overlay-bar-wrap">
+                              <div
+                                className="product-detail-rating-overlay-bar-fill"
+                                style={{ width: `${percent}%` }}
+                              />
+                            </div>
+                            <span className="product-detail-rating-overlay-percent">
+                              {Math.round(percent)}%
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="product-detail-rating-overlay-cta-row">
+                      <button
+                        type="button"
+                        className="product-detail-rating-overlay-cta btn btn-primary btn-sm"
+                        onClick={goToReviews}
+                      >
+                        See customer reviews
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )}
 
               <div className="price-section mb-3 product-detail-price-block">
                 <div className="product-detail-price-line">
                   {originalPrice && (
-                    <span className="text-danger me-2 fw-semibold" style={{ fontSize: "clamp(0.95rem, 2.5vw, 1.1rem)" }}>
+                    <span
+                      className="text-danger me-2"
+                      style={{
+                        fontSize: "clamp(1.1rem, 3.5vw + 0.5rem, 1.5rem)",
+                        fontWeight: 900,
+                      }}
+                    >
                       -{Math.round(((originalPrice - price) / originalPrice) * 100)}%
                     </span>
                   )}
                   <span
-                    className="discounted-price text-primary fw-bold"
-                    style={{ fontSize: "clamp(1.1rem, 3.5vw + 0.5rem, 1.8rem)" }}
+                    className="discounted-price text-black"
+                    style={{ fontSize: "clamp(1.1rem, 3.5vw + 0.5rem, 1.8rem)" ,
+                      fontWeight: 300,
+                    }}
                   >
                     {formatPrice(price)}
                   </span>
                 </div>
                 {originalPrice && (
                   <div className="product-detail-price-line product-detail-price-mrp">
-                    <span className="text-muted" style={{ fontSize: "clamp(0.95rem, 2.5vw, 1.1rem)" }}>
+                    <span className="text-muted" style={{ fontSize: "clamp(0.6rem, 2.5vw, 0.8rem)" }}>
                       M.R.P: <span className="text-decoration-line-through">{formatPrice(originalPrice)}</span>
                     </span>
                   </div>
                 )}
                 <p className="product-detail-price-tax text-muted small mb-0">
                   Inclusive of all taxes
+                </p>
+
+                <p className="product-detail-emi-text text-muted mb-0 mt-1">
+                  EMI options available during payment checkout
                 </p>
               </div>
 
@@ -908,7 +1279,7 @@ const ProductDetails = () => {
                   </div>
                 );
               })}
-             
+
             </div>
 
             {loadingReviews ? (
@@ -918,32 +1289,34 @@ const ProductDetails = () => {
                 </div>
               </div>
             ) : reviews.length > 0 ? (
-              <div className="list-group product-reviews-list">
+              <div className="row customer-reviews-grid row-cols-1 row-cols-lg-4 g-3">
                 {reviews.map((r) => (
-                  <div
-                    key={r.id}
-                    className="list-group-item list-group-item-action p-3 p-md-4 review-list-item"
-                  >
-                    <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start gap-2">
-                      <div className="flex-grow-1 w-100">
-                        <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-1 gap-sm-2 mb-2">
+                  <div key={r.id} className="col">
+                    <div className="list-group-item list-group-item-action p-3 p-md-4 review-list-item h-100">
+                      <div className="d-flex flex-column gap-2">
+                        <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-2">
                           <div className="d-flex align-items-center gap-1 review-stars">
                             {[1, 2, 3, 4, 5].map((star) => (
                               <i
                                 key={star}
-                                className={`bi ${star <= r.rating ? "bi-star-fill text-warning" : "bi-star text-muted"}`}
-                                style={{ fontSize: "clamp(0.85rem, 2vw, 0.9rem)" }}
+                                className={`bi ${
+                                  star <= r.rating
+                                    ? "bi-star-fill text-warning"
+                                    : "bi-star text-muted"
+                                }`}
+                                style={{
+                                  fontSize: "clamp(0.85rem, 2vw, 0.9rem)",
+                                }}
                               />
                             ))}
                           </div>
                           <span className="text-muted review-customer-name fw-medium">
-                            {r.reviewerName || "Customer"}
+                            {maskDisplayName(r.reviewerName || "Customer")}
                           </span>
                         </div>
+
                         {r.reviewText && (
-                          <p className="mb-0 review-text">
-                            {r.reviewText}
-                          </p>
+                          <p className="mb-0 review-text">{r.reviewText}</p>
                         )}
                       </div>
                     </div>
@@ -952,7 +1325,8 @@ const ProductDetails = () => {
               </div>
             ) : totalReviewCount > 0 ? (
               <p className="text-muted" style={{ fontSize: "clamp(0.85rem, 1.8vw, 0.95rem)" }}>
-               
+                Rating summary is shown above. Written reviews from customers will appear here when
+                submitted.
               </p>
             ) : (
               <p className="text-muted" style={{ fontSize: "clamp(0.85rem, 1.8vw, 0.95rem)" }}>
@@ -961,6 +1335,103 @@ const ProductDetails = () => {
             )}
           </div>
         </div>
+
+        {/* Customer review write form */}
+        {!isLoggedIn ? (
+          <div ref={reviewFormRef} className="mt-4 mt-md-5 review-write-section">
+            <h4 className="mb-3 fw-bold" style={{ fontSize: "clamp(1.05rem, 2.5vw, 1.25rem)" }}>
+              Write a review
+            </h4>
+
+            <div className="alert alert-warning mb-0">
+              Please login to write a review.
+              <div className="mt-2">
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  onClick={handleLoginForReview}
+                >
+                  Login
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : canReviewProduct || myReview ? (
+          <div ref={reviewFormRef} className="mt-4 mt-md-5 review-write-section">
+            <h4 className="mb-3 fw-bold" style={{ fontSize: "clamp(1.05rem, 2.5vw, 1.25rem)" }}>
+              Write a review
+            </h4>
+
+            {loadingEligibility ? (
+              <div className="text-center py-3">
+                <div className="spinner-border text-primary" role="status">
+                  <span className="visually-hidden">Loading...</span>
+                </div>
+              </div>
+            ) : myReview ? (
+              <div className="alert alert-success mb-0">
+                <div className="fw-semibold">Thanks for your review!</div>
+                <div className="text-muted small mt-1">
+                  {myReview.rating} / 5 stars
+                </div>
+                {myReview.reviewText ? (
+                  <div className="review-text mt-2">{myReview.reviewText}</div>
+                ) : null}
+              </div>
+            ) : (
+              <form onSubmit={handleSubmitReview}>
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Your rating</label>
+                  <div className="d-flex align-items-center gap-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        className="btn btn-link p-0 text-decoration-none"
+                        onClick={() => setReviewRating(star)}
+                        aria-label={`Set rating to ${star}`}
+                      >
+                        <i
+                          className={`bi ${
+                            star <= reviewRating
+                              ? "bi-star-fill text-warning"
+                              : "bi-star text-muted"
+                          }`}
+                          style={{ fontSize: "1.4rem" }}
+                        />
+                      </button>
+                    ))}
+                    <span className="text-muted ms-2">{reviewRating} / 5</span>
+                  </div>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Your review</label>
+                  <textarea
+                    className="form-control"
+                    rows={4}
+                    value={reviewText}
+                    onChange={(e) => setReviewText(e.target.value)}
+                    placeholder="Share your experience with this product."
+                    maxLength={5000}
+                  />
+                </div>
+
+                {reviewSubmitError ? (
+                  <div className="text-danger small mb-3">{reviewSubmitError}</div>
+                ) : null}
+
+                <button
+                  className="btn btn-success"
+                  type="submit"
+                  disabled={reviewSubmitting}
+                >
+                  {reviewSubmitting ? "Submitting..." : "Submit review"}
+                </button>
+              </form>
+            )}
+          </div>
+        ) : null}
 
         {/* Similar Products Section */}
         {product && (

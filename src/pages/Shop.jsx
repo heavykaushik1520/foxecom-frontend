@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { reviewAPI, productAPI, categoryAPI, getImageUrl } from '../utils/api'
+import { getProductPathSegment } from '../utils/productPath'
 import { useCart } from '../contexts/CartContext'
 import fallbackImage from '../assest/images/product-item1.jpg'
 import ProductRatingExpandable from '../components/ProductRatingExpandable'
@@ -23,6 +24,8 @@ const Shop = () => {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const modelIdFromUrl = searchParams.get('modelId') || ''
+  const categoryIdFromUrl = searchParams.get('categoryId') || ''
+  const categorySlugFromUrl = searchParams.get('categorySlug') || ''
 
   // State management
   const [products, setProducts] = useState([])
@@ -81,6 +84,33 @@ const Shop = () => {
       setFilters(prev => ({ ...prev, modelId: modelIdFromUrl }))
     }
   }, [modelIdFromUrl])
+
+  // Sync categoryId from URL into filters (e.g. from FOXECOM Originals click)
+  useEffect(() => {
+    if (categoryIdFromUrl) {
+      setFilters((prev) => ({ ...prev, categoryId: categoryIdFromUrl }))
+    }
+  }, [categoryIdFromUrl])
+
+  // Sync categorySlug from URL into filters (SEO-friendly; we still filter by numeric categoryId internally)
+  useEffect(() => {
+    if (!categorySlugFromUrl) return
+    if (categoryIdFromUrl) return // prefer numeric id when both exist
+
+    const loadCategoryIdFromSlug = async () => {
+      try {
+        const data = await categoryAPI.getById(categorySlugFromUrl)
+        const category = data.category || data
+        if (category?.id != null) {
+          setFilters((prev) => ({ ...prev, categoryId: String(category.id) }))
+        }
+      } catch (err) {
+        console.error('Failed to resolve category slug:', err)
+      }
+    }
+
+    loadCategoryIdFromSlug()
+  }, [categorySlugFromUrl, categoryIdFromUrl])
 
   // Load products when filters, sort, or pagination changes
   useEffect(() => {
@@ -214,6 +244,24 @@ const Shop = () => {
   }
 
   const handleFilterChange = (key, value) => {
+    // Keep URL in sync for SEO-friendly category browsing
+    if (key === 'categoryId') {
+      const params = new URLSearchParams(searchParams)
+      if (value) {
+        const selected = categories.find((c) => String(c.id) === String(value))
+        if (selected?.slug) {
+          params.set('categorySlug', selected.slug)
+          params.delete('categoryId')
+        } else {
+          params.set('categoryId', value)
+          params.delete('categorySlug')
+        }
+      } else {
+        params.delete('categoryId')
+        params.delete('categorySlug')
+      }
+      setSearchParams(params, { replace: true })
+    }
     setFilters(prev => ({
       ...prev,
       [key]: value
@@ -270,7 +318,7 @@ const Shop = () => {
     const token = localStorage.getItem('token')
     if (!token) {
       alert('Please login to proceed with Buy Now')
-      localStorage.setItem('redirectAfterLogin', `/product/${product.id}`)
+      localStorage.setItem('redirectAfterLogin', `/product/${getProductPathSegment(product)}`)
       navigate('/login')
       return
     }
@@ -279,10 +327,6 @@ const Shop = () => {
     if (success) {
       navigate('/checkout')
     }
-  }
-
-  const formatPrice = (price) => {
-    return `₹${parseFloat(price).toFixed(2)}`
   }
 
   const hasActiveFilters = Object.values(filters).some(val => val !== '' && val != null) || sortBy !== 'createdAt'
@@ -590,14 +634,34 @@ const Shop = () => {
                   // console.log("product rating and review count", product.averageRating, product.reviewCount)
                   const imagePath = product.thumbnailImage || product.images?.[0]?.imageUrl
                   const imageUrl = getImageUrl(imagePath)
-                  const price = parseFloat(product.discountPrice || product.price)
+                  const finalPrice = parseFloat(product.discountPrice || product.price)
                   const originalPrice = product.discountPrice ? parseFloat(product.price) : null
+                  const hasDiscount =
+                    Boolean(product.discountPrice) &&
+                    originalPrice != null &&
+                    finalPrice < originalPrice
+                  const discountPercentage =
+                    hasDiscount && originalPrice
+                      ? Math.round(((originalPrice - finalPrice) / originalPrice) * 100)
+                      : 0
                   const inStock = product.stock && product.stock > 0
+                  const rating = ratingsMap[product.id]?.averageRating
+                  const reviewCount = ratingsMap[product.id]?.reviewCount
+                  const fiveStarCount = Math.max(
+                    0,
+                    parseInt(
+                      product?.count5 ??
+                        product?.fiveStarCount ??
+                        product?.ratingSummary?.count5 ??
+                        0,
+                      10
+                    ) || 0
+                  )
 
                   return (
                     <div key={product.id} className="col-lg-4 col-md-6 col-sm-6 mb-4">
                       <div className="card h-100 shadow-sm product-card">
-                        <Link to={`/product/${product.id}`} className="text-decoration-none">
+                        <Link to={`/product/${getProductPathSegment(product)}`} className="text-decoration-none">
                           <div className="position-relative" style={{ height: '250px', overflow: 'hidden', backgroundColor: '#f8f9fa' }}>
                             <img
                               src={imageUrl}
@@ -610,9 +674,12 @@ const Shop = () => {
                                 e.target.src = fallbackImage
                               }}
                             />
-                            {originalPrice && (
-                              <span className="badge bg-danger position-absolute top-0 end-0 m-2">
-                                {Math.round(((originalPrice - price) / originalPrice) * 100)}% OFF
+                            {hasDiscount && discountPercentage > 0 && (
+                              <span
+                                className="badge bg-danger position-absolute top-0 end-0 m-2"
+                                style={{ fontSize: '15px', fontWeight: 900 }}
+                              >
+                                -{discountPercentage}%
                               </span>
                             )}
                             {!inStock && (
@@ -624,10 +691,7 @@ const Shop = () => {
                         </Link>
 
                         <div className="card-body d-flex flex-column">
-                          <Link to={`/product/${product.id}`} className="text-decoration-none text-dark">
-                            {product.sku && (
-                              <span className="product-card-brand d-block mb-1">{product.sku}</span>
-                            )}
+                          <Link to={`/product/${getProductPathSegment(product)}`} className="text-decoration-none text-dark">
                             <h5 className="card-title mb-2 fw-semibold product-card-title">{product.title}</h5>
                           </Link>
 
@@ -640,24 +704,67 @@ const Shop = () => {
                           )}
 
                           <div className="mt-auto">
-                            <div className="mb-2">
-                              <ProductRatingExpandable
-                                averageRating={ratingsMap[product.id]?.averageRating}
-                                totalCount={ratingsMap[product.id]?.reviewCount}
-                                productId={product.id}
-                                starSize="0.85rem"
-                              />
-                            </div>
-                            <div className="d-flex justify-content-between align-items-center mb-3">
+                            {rating !== undefined &&
+                              (rating > 0 || reviewCount > 0 || fiveStarCount > 0) && (
+                                <div className="mb-2 product-card-rating-compact">
+                                  <ProductRatingExpandable
+                                    averageRating={rating}
+                                    totalCount={reviewCount || 0}
+                                    displayCount={reviewCount || 0}
+                                    productId={product.id}
+                                    productLinkSegment={getProductPathSegment(product)}
+                                    starSize="0.85rem"
+                                    showCount
+                                  />
+                                </div>
+                              )}
+                            <div className="d-flex justify-content-between align-items-center mb-0">
                               <div>
-                                <span className="h5 text-primary mb-0">{formatPrice(price)}</span>
-                                {originalPrice && (
-                                  <span className="text-muted text-decoration-line-through small ms-2">
-                                    {formatPrice(originalPrice)}
+                                {hasDiscount ? (
+                                  <div className="d-flex align-items-baseline gap-2">
+                                    <span
+                                      className="h5"
+                                      style={{
+                                        fontWeight: 900,
+                                        lineHeight: 1,
+                                        color: '#dc3545',
+                                        fontSize: '15px',
+                                      }}
+                                    >
+                                      -{discountPercentage}%
+                                    </span>
+                                    <span
+                                      className="h5 mb-0"
+                                      style={{ fontWeight: 400, color: '#000', fontSize: '15px' }}
+                                    >
+                                      Rs.{finalPrice.toFixed(2)}
+                                    </span>
+                                    <span
+                                      className="small"
+                                      style={{ fontWeight: 300, color: '#000', fontSize: '15px' }}
+                                    >
+                                      M.R.P:{' '}
+                                      <span
+                                        className="text-decoration-line-through"
+                                        style={{ color: '#000', fontSize: '15px' }}
+                                      >
+                                        {originalPrice.toFixed(2)}
+                                      </span>
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span
+                                    className="h5 mb-0"
+                                    style={{ color: '#000', fontSize: '15px' }}
+                                  >
+                                    Rs.{finalPrice.toFixed(2)}
                                   </span>
                                 )}
                               </div>
                             </div>
+                            <p className="text-muted mt-0 mb-0" style={{ fontSize: '12px' }}>
+                              FREE SHIPPING
+                            </p>
 
                             <div className="d-flex flex-column gap-2">
                               <button
@@ -703,7 +810,7 @@ const Shop = () => {
             {!loading && pagination.totalPages > 1 && (
               <div className="d-flex justify-content-center mt-4">
                 <nav aria-label="Page navigation">
-                  <ul className="pagination">
+                  <ul className="pagination shop-pagination">
                     <li className={`page-item ${pagination.page === 1 ? 'disabled' : ''}`}>
                       <button
                         className="page-link"

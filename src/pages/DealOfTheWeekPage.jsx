@@ -42,6 +42,28 @@ const DealOfTheWeekPage = () => {
   const [distributionPercent, setDistributionPercent] = useState({});
   const [loadingReviews, setLoadingReviews] = useState(false);
 
+  const maskDisplayName = (value) => {
+    const v = String(value || "").trim();
+    if (!v) return "Customer";
+    if (v.includes("*")) return v;
+    if (!v.includes("@")) {
+      if (v.length <= 2) return `${v[0] || ""}***`;
+      const first = v[0];
+      const last = v[v.length - 1];
+      const starCount = v.length - 2 >= 7 ? 7 : Math.max(1, v.length - 2);
+      return `${first}${"*".repeat(starCount)}${last}`;
+    }
+    const [userPart, domain] = v.split("@");
+    if (!domain) return v;
+    const first = userPart?.[0] || "";
+    const last = userPart?.[userPart.length - 1] || "";
+    const starCount =
+      (userPart?.length || 0) - 2 >= 7
+        ? 7
+        : Math.max(1, (userPart?.length || 0) - 2);
+    return `${first}${"*".repeat(starCount)}${last}@${domain}`;
+  };
+
   useEffect(() => {
     const loadDealProduct = async () => {
       try {
@@ -933,15 +955,12 @@ const DealOfTheWeekPage = () => {
                 </div>
               </div>
             ) : reviews.length > 0 ? (
-              <div className="list-group product-reviews-list">
+              <div className="row customer-reviews-grid row-cols-1 row-cols-lg-4 g-3">
                 {reviews.map((r) => (
-                  <div
-                    key={r.id}
-                    className="list-group-item list-group-item-action p-3 p-md-4 review-list-item"
-                  >
-                    <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start gap-2">
-                      <div className="flex-grow-1 w-100">
-                        <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-1 gap-sm-2 mb-2">
+                  <div key={r.id} className="col">
+                    <div className="list-group-item list-group-item-action p-3 p-md-4 review-list-item h-100">
+                      <div className="d-flex flex-column gap-2">
+                        <div className="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-2">
                           <div className="d-flex align-items-center gap-1 review-stars">
                             {[1, 2, 3, 4, 5].map((star) => (
                               <i
@@ -958,7 +977,7 @@ const DealOfTheWeekPage = () => {
                             ))}
                           </div>
                           <span className="text-muted review-customer-name fw-medium">
-                            {r.reviewerName || "Customer"}
+                            {maskDisplayName(r.reviewerName || "Customer")}
                           </span>
                         </div>
                         {r.reviewText && (
@@ -975,7 +994,10 @@ const DealOfTheWeekPage = () => {
                 style={{
                   fontSize: "clamp(0.85rem, 1.8vw, 0.95rem)",
                 }}
-              ></p>
+              >
+                Rating summary is shown above. Written reviews from customers will appear here when
+                submitted.
+              </p>
             ) : (
               <p
                 className="text-muted"

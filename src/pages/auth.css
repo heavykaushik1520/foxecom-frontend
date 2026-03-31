@@ -25,14 +25,187 @@
   cursor: not-allowed;
 }
 
-/* Responsive adjustments */
-@media (max-width: 576px) {
-  .auth-card {
+/* ---------- Sign-in page: scale per breakpoint ---------- */
+.auth-page {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.auth-page .auth-title {
+  font-size: clamp(1.25rem, 4.5vw, 2rem);
+  color: #212529;
+}
+
+.auth-page .auth-subtitle {
+  font-size: clamp(0.8125rem, 2.2vw, 0.95rem);
+}
+
+.auth-page .auth-label {
+  font-size: clamp(0.8125rem, 2vw, 0.95rem);
+  color: #495057;
+}
+
+/* Text fields: slim on phones, scale up on larger screens */
+.auth-page .auth-input {
+  font-size: 0.875rem;
+  padding: 0.4rem 0.75rem;
+  min-height: 2.375rem;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+@media (min-width: 400px) {
+  .auth-page .auth-input {
+    font-size: 0.9rem;
+    padding: 0.45rem 0.8rem;
+    min-height: 2.5rem;
+  }
+}
+
+@media (min-width: 576px) {
+  .auth-page .auth-input {
+    font-size: 0.9375rem;
+    padding: 0.5rem 0.875rem;
+    min-height: 2.625rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .auth-page .auth-input {
+    font-size: 1rem;
+    padding: 0.5625rem 1rem;
+    min-height: 2.75rem;
+  }
+}
+
+.auth-page .auth-input-group .form-control.auth-input {
+  border-radius: 8px 0 0 8px;
+}
+
+.auth-page .auth-input-group .btn-toggle-password {
+  border-radius: 0 8px 8px 0;
+  border: 1px solid #dee2e6;
+  border-left: none;
+  padding: 0.4rem 0.65rem;
+  min-width: 2.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (min-width: 400px) {
+  .auth-page .auth-input-group .btn-toggle-password {
+    padding: 0.45rem 0.75rem;
+  }
+}
+
+@media (min-width: 576px) {
+  .auth-page .auth-input-group .btn-toggle-password {
+    padding: 0.5rem 0.85rem;
+  }
+}
+
+.auth-page .auth-input-group .btn-toggle-password i {
+  font-size: 1rem;
+}
+
+@media (min-width: 576px) {
+  .auth-page .auth-input-group .btn-toggle-password i {
+    font-size: 1.0625rem;
+  }
+}
+
+/* Primary + Google actions — chain .btn so we win over global responsive .btn rules in index.css */
+.auth-page .btn.auth-btn:not(.btn-link) {
+  font-size: 0.875rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+@media (min-width: 400px) {
+  .auth-page .btn.auth-btn:not(.btn-link) {
+    font-size: 0.9rem;
+    padding: 0.55rem 1rem;
+  }
+}
+
+@media (min-width: 576px) {
+  .auth-page .btn.auth-btn:not(.btn-link) {
+    font-size: 0.9375rem;
+    padding: 0.6rem 1.125rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .auth-page .btn.auth-btn:not(.btn-link) {
+    font-size: 1rem;
+    padding: 0.65rem 1.25rem;
+  }
+}
+
+.auth-page .auth-btn-google {
+  border: 1px solid #dee2e6;
+  color: #89bb56;
+  background-color: #fff;
+  transition: background-color 0.2s ease;
+}
+
+.auth-page .auth-btn-google:hover:not(:disabled) {
+  background-color: #f8f9fa;
+  border-color: #dee2e6;
+  color: #89bb56;
+}
+
+.auth-page .auth-btn-submit {
+  border: none;
+  background-color: #89bb56;
+}
+
+.auth-page .auth-btn-submit:hover:not(:disabled) {
+  background-color: #7aa84a;
+}
+
+.auth-page .auth-link-muted {
+  font-size: clamp(0.8rem, 2vw, 0.875rem);
+}
+
+.auth-page .auth-footer-text {
+  font-size: clamp(0.8125rem, 2vw, 0.9rem);
+  color: #6c757d;
+}
+
+.auth-page .auth-divider-text {
+  font-size: clamp(0.75rem, 1.8vw, 0.85rem);
+}
+
+.auth-page .alert {
+  font-size: clamp(0.78rem, 1.8vw, 0.875rem);
+  border-radius: 8px;
+}
+
+/* Card padding: tighter on narrow phones */
+@media (max-width: 575.98px) {
+  .auth-page .auth-card {
     border-radius: 8px;
   }
-  
-  .auth-card .card-body {
+
+  .auth-page .auth-card .card-body {
+    padding: 1.25rem !important;
+  }
+}
+
+@media (min-width: 576px) and (max-width: 767.98px) {
+  .auth-page .auth-card .card-body {
     padding: 1.5rem !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .auth-page {
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
   }
 }
 

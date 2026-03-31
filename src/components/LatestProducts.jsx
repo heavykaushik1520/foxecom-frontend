@@ -83,6 +83,7 @@ const LatestProducts = ({ limit = 8 }) => {
                   images: product.images,
                   rating: product.rating || product.averageRating || 0,
                   reviewCount: product.reviewCount || product.reviewsCount || 0,
+                  fiveStarCount: product?.ratingSummary?.count5 ?? product?.count5 ?? 0,
                   inStock: product.inStock !== false,
                   category: product.category,
                   sku: product.sku ?? '',

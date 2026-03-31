@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { orderAPI, getImageUrl, API_BASE_URL } from '../utils/api'
 
@@ -9,6 +9,8 @@ const OrderSuccess = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  const purchaseTrackedRef = useRef(false)
+
   const GST_RATE = 0.18
 
   useEffect(() => {
@@ -16,6 +18,32 @@ const OrderSuccess = () => {
       loadOrder()
     }
   }, [id])
+
+  useEffect(() => {
+    if (!order) return;
+    if (purchaseTrackedRef.current) return;
+    if (typeof window === "undefined") return;
+    if (typeof window.fbq !== "function") return;
+  
+    const orderValueRaw = parseFloat(order.totalAmount || 0);
+    const orderValue = Number.isFinite(orderValueRaw) ? orderValueRaw : 0;
+  
+    const contentIds = Array.isArray(order.orderItems)
+      ? order.orderItems
+          .map((item) => item?.product?.id || item?.productId)
+          .filter(Boolean)
+          .map((id) => String(id))
+      : [];
+  
+    window.fbq("track", "Purchase", {
+      content_ids: contentIds,
+      content_type: "product",
+      value: orderValue,
+      currency: "INR",
+    });
+  
+    purchaseTrackedRef.current = true;
+  }, [order]);
 
   const loadOrder = async () => {
     try {
@@ -108,8 +136,8 @@ const OrderSuccess = () => {
         order.orderNumberForUser === 2
           ? '2nd'
           : order.orderNumberForUser === 3
-          ? '3rd'
-          : ''
+            ? '3rd'
+            : ''
       if (pct) {
         discountLabel = nth ? `UPI Discount (${pct}% - ${nth} purchase)` : `UPI Discount (${pct}%)`
       } else {
@@ -389,7 +417,7 @@ const OrderSuccess = () => {
 
                   // Prefer first non-empty SKU as FOXECOM IP, otherwise fall back to order id
                   const foxecomIp = (lines.find(line => line.sku)?.sku) || (order?.id ? `ORD-${order.id}` : '')
-                  
+
 
                   return (
                     <>

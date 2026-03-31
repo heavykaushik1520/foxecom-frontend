@@ -33,10 +33,11 @@ const BuyOneGetOne = () => {
                 {
                   averageRating: data.averageRating || 0,
                   reviewCount: data.totalCount ?? data.reviews?.length ?? 0,
+                  fiveStarCount: Number(data?.distribution?.[5]) || 0,
                 },
               ];
             } catch {
-              return [p.id, { averageRating: 0, reviewCount: 0 }];
+              return [p.id, { averageRating: 0, reviewCount: 0, fiveStarCount: 0 }];
             }
           })
         );
@@ -145,6 +146,11 @@ const BuyOneGetOne = () => {
                   ratingsMap[product.id]?.reviewCount ??
                   product.reviewCount ??
                   product.reviewsCount ??
+                  0,
+                fiveStarCount:
+                  ratingsMap[product.id]?.fiveStarCount ??
+                  product?.ratingSummary?.count5 ??
+                  product?.count5 ??
                   0,
                 inStock: product.stock !== null && product.stock > 0,
                 category: product.category,

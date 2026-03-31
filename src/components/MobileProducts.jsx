@@ -27,9 +27,13 @@ const MobileProducts = () => {
           products.map(async (p) => {
             try {
               const data = await reviewAPI.getByProduct(p.id)
-              return [p.id, { averageRating: data.averageRating || 0, reviewCount: data.totalCount ?? data.reviews?.length ?? 0 }]
+              return [p.id, {
+                averageRating: data.averageRating || 0,
+                reviewCount: data.totalCount ?? data.reviews?.length ?? 0,
+                fiveStarCount: Number(data?.distribution?.[5]) || 0,
+              }]
             } catch {
-              return [p.id, { averageRating: 0, reviewCount: 0 }]
+              return [p.id, { averageRating: 0, reviewCount: 0, fiveStarCount: 0 }]
             }
           })
         )
@@ -89,7 +93,7 @@ const MobileProducts = () => {
   }
 
   return (
-    <section id="mobile-products" className="product-store position-relative padding-large no-padding-top">
+    <section id="mobile-products" className="product-store position-relative padding-large">
       <div className="container">
         <div className="row">
           <div className="display-header d-flex justify-content-between pb-3">
@@ -177,6 +181,7 @@ const MobileProducts = () => {
                   images: product.images,
                   rating: ratingsMap[product.id]?.averageRating ?? product.rating ?? product.averageRating ?? 0,
                   reviewCount: ratingsMap[product.id]?.reviewCount ?? product.reviewCount ?? product.reviewsCount ?? 0,
+                  fiveStarCount: ratingsMap[product.id]?.fiveStarCount ?? product?.ratingSummary?.count5 ?? product?.count5 ?? 0,
                   inStock: product.inStock !== false,
                   category: product.category,
                   sku: product.sku ?? '',

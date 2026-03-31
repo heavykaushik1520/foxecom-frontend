@@ -17,6 +17,7 @@ const AddProduct = () => {
   const [discountPrice, setDiscountPrice] = useState("");
   const [stock, setStock] = useState("");
   const [sku, setSku] = useState("");
+  const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
 
   const [thumbnail, setThumbnail] = useState(null);
@@ -110,6 +111,7 @@ const AddProduct = () => {
       formData.append("discountPrice", discountPrice);
       formData.append("stock", stock);
       formData.append("sku", sku);
+      formData.append("slug", slug.trim());
       formData.append("description", description);
       formData.append("thumbnailImage", thumbnail);
 
@@ -235,6 +237,20 @@ const AddProduct = () => {
                       value={sku}
                       onChange={(e) => setSku(e.target.value)}
                     />
+                  </div>
+
+                  <div className="col-md-6">
+                    <label className="form-label">URL slug (optional)</label>
+                    <input
+                      className="form-control"
+                      value={slug}
+                      onChange={(e) => setSlug(e.target.value)}
+                      placeholder="e.g. leather-case-iphone-15"
+                      autoComplete="off"
+                    />
+                    <small className="text-muted">
+                      Lowercase letters, numbers, hyphens. Leave empty to auto-generate from the title.
+                    </small>
                   </div>
 
                   <div className="col-md-6">

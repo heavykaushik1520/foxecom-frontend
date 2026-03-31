@@ -2,6 +2,7 @@ import React, { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../contexts/CartContext'
 import { getImageUrl } from '../utils/api'
+import { getProductPathSegment } from '../utils/productPath'
 import fallbackImage from '../assest/images/product-item1.jpg'
 
 const Cart = () => {
@@ -86,7 +87,7 @@ const Cart = () => {
                         {/* Mobile Layout: Stack vertically */}
                         <div className="d-flex d-md-none flex-column">
                           <div className="d-flex mb-3">
-                            <Link to={`/product/${item.id}`} className="text-decoration-none me-3">
+                            <Link to={`/product/${getProductPathSegment(item)}`} className="text-decoration-none me-3">
                               <img
                                 src={getImageUrl(item.thumbnailImage || item.image)}
                                 alt={item.title}
@@ -104,7 +105,7 @@ const Cart = () => {
                               />
                             </Link>
                             <div className="flex-grow-1">
-                              <Link to={`/product/${item.id}`} className="text-decoration-none text-dark">
+                              <Link to={`/product/${getProductPathSegment(item)}`} className="text-decoration-none text-dark">
                                 <h5 className="mb-1 fw-semibold" style={{ fontSize: 'clamp(0.9rem, 2.5vw, 1rem)' }}>{item.title}</h5>
                               </Link>
                               {item.category && (
@@ -166,7 +167,7 @@ const Cart = () => {
 
                         {/* Desktop Layout: Horizontal */}
                         <div className="d-none d-md-flex align-items-center">
-                          <Link to={`/product/${item.id}`} className="text-decoration-none">
+                          <Link to={`/product/${getProductPathSegment(item)}`} className="text-decoration-none">
                             <img
                               src={getImageUrl(item.thumbnailImage || item.image)}
                               alt={item.title}
@@ -179,7 +180,7 @@ const Cart = () => {
                           </Link>
 
                           <div className="flex-grow-1 ms-3 ms-md-4">
-                            <Link to={`/product/${item.id}`} className="text-decoration-none text-dark">
+                            <Link to={`/product/${getProductPathSegment(item)}`} className="text-decoration-none text-dark">
                               <h5 className="mb-2 fw-semibold" style={{ fontSize: 'clamp(0.95rem, 1.5vw, 1rem)' }}>{item.title}</h5>
                             </Link>
                             {item.category && (

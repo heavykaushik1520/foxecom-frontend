@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { Pagination } from 'swiper/modules'
 import { getProductsByCategory } from '../data/products'
+import { getProductPathSegment } from '../utils/productPath'
 import { useCart } from '../contexts/CartContext'
 import 'swiper/css'
 import 'swiper/css/pagination'
@@ -50,7 +51,7 @@ const SmartWatches = () => {
             {watches.map((watch) => (
               <SwiperSlide key={watch.id}>
                 <div className="product-card position-relative">
-                  <Link to={`/product/${watch.id}`}>
+                  <Link to={`/product/${getProductPathSegment(watch)}`}>
                     <div className="image-holder">
                       <img src={watch.image} alt="product-item" className="img-fluid" />
                     </div>
@@ -71,7 +72,7 @@ const SmartWatches = () => {
                   </div>
                   <div className="card-detail d-flex justify-content-between align-items-baseline pt-3">
                     <h3 className="card-title text-uppercase">
-                      <Link to={`/product/${watch.id}`} className="text-decoration-none text-dark">
+                      <Link to={`/product/${getProductPathSegment(watch)}`} className="text-decoration-none text-dark">
                         {watch.name}
                       </Link>
                     </h3>

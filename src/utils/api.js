@@ -358,6 +358,55 @@ export const buyOneGetOneAPI = {
   },
 };
 
+// FOXECOM Originals APIs
+export const foxcomOriginalsAPI = {
+  // Public: Get active originals section
+  getActive: async () => {
+    const { data } = await apiRequest('/foxcom-originals');
+    return data?.originals || null;
+  },
+
+  // Admin: Get all originals sections
+  getAll: async (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = `/admin/foxcom-originals${queryString ? `?${queryString}` : ''}`;
+    const { data } = await adminApiRequest(endpoint);
+    return data;
+  },
+
+  // Admin: Get originals by ID
+  getById: async (id) => {
+    const { data } = await adminApiRequest(`/admin/foxcom-originals/${id}`);
+    return data;
+  },
+
+  // Admin: Create originals section
+  create: async (payload) => {
+    const { data } = await adminApiRequest('/admin/foxcom-originals', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    return data;
+  },
+
+  // Admin: Update originals section
+  update: async (id, payload) => {
+    const { data } = await adminApiRequest(`/admin/foxcom-originals/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+    return data;
+  },
+
+  // Admin: Delete originals section
+  delete: async (id) => {
+    const { data } = await adminApiRequest(`/admin/foxcom-originals/${id}`, {
+      method: 'DELETE',
+    });
+    return data;
+  },
+};
+
 export const categoryAPI = {
   getAll: async (params = {}) => {
     const queryString = new URLSearchParams(params).toString();
@@ -523,6 +572,23 @@ export const reviewAPI = {
     const { data } = await apiRequest(`/products/${productId}/reviews`);
     return data;
   },
+  // Customer: create or update their review (requires auth token)
+  createOrUpdateCustomerReview: async (productId, { rating, reviewText }) => {
+    const payload = {
+      rating,
+      reviewText,
+    };
+    const { data } = await apiRequest(`/customer/products/${productId}/reviews`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    return data;
+  },
+  // Customer: list your reviews (requires auth token)
+  getMyReviews: async () => {
+    const { data } = await apiRequest(`/customer/my-reviews`);
+    return data;
+  },
 };
 
 // Order APIs
@@ -533,6 +599,18 @@ export const orderAPI = {
       body: JSON.stringify(orderData),
     });
     return data;
+  },
+
+  // Customer: fetch my orders (requires auth token)
+  // Backend supports `status`, `page`, `limit`.
+  getMyOrders: async ({ status, page = 1, limit = 50 } = {}) => {
+    const params = new URLSearchParams();
+    if (status) params.set("status", status);
+    if (page) params.set("page", String(page));
+    if (limit) params.set("limit", String(limit));
+    const qs = params.toString();
+    const { data } = await apiRequest(`/order${qs ? `?${qs}` : ""}`);
+    return data?.orders || [];
   },
   
   getAll: async (params = {}) => {
@@ -587,7 +665,7 @@ export const paymentAPI = {
 // Contact Form API (public)
 export const contactAPI = {
   submit: async (payload) => {
-    const { data } = await apiRequest('/contact/send-message', {
+    const { data } = await apiRequest('/contact', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
@@ -813,6 +891,116 @@ export const adminAPI = {
   getDashboardStats: async () => {
     const { data } = await adminApiRequest('/admin/dashboard/stats');
     return data;
+  },
+
+  // Dashboard Revenue by period (admin)
+  getRevenueByPeriod: async (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = `/admin/dashboard/revenue${queryString ? `?${queryString}` : ''}`;
+    const { data } = await adminApiRequest(endpoint);
+    return data;
+  },
+
+  /** Live visitors (heartbeat within last ~2 minutes on server) */
+  getLiveVisitors: async () => {
+    const { data } = await adminApiRequest('/admin/live-visitors');
+    return data;
+  },
+
+  /** Live viewers on a product page (same online window as getLiveVisitors) */
+  getProductLiveViewers: async (productId) => {
+    const { data } = await adminApiRequest(`/admin/product-live-viewers/${encodeURIComponent(productId)}`);
+    return data;
+  },
+
+  // Download Meta Product Catalog CSV feed (admin-protected)
+  downloadMetaProductFeed: async () => {
+    const token = getAdminToken();
+    const response = await fetch(`${API_BASE_URL}/meta-product-feed.csv`, {
+      method: 'GET',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+
+    const refreshedToken = response.headers.get('x-auth-token');
+    if (refreshedToken) {
+      localStorage.setItem(STORAGE_KEYS.ADMIN_TOKEN, refreshedToken);
+    }
+
+    if (!response.ok) {
+      const message = response.status === 401 || response.status === 403
+        ? 'Admin session expired. Please log in again.'
+        : 'Failed to download Meta CSV feed';
+
+      if (response.status === 400 || response.status === 401 || response.status === 403) {
+        localStorage.removeItem(STORAGE_KEYS.ADMIN_TOKEN);
+        localStorage.removeItem(STORAGE_KEYS.IS_ADMIN);
+        localStorage.removeItem(STORAGE_KEYS.ADMIN_ROLE);
+        const err = new Error(message);
+        err.isAdminTokenError = true;
+        err.status = response.status;
+        throw err;
+      }
+
+      throw new Error(message);
+    }
+
+    const blob = await response.blob();
+    const objectUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = 'meta-product-feed.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(objectUrl);
+  },
+
+  // Download GST monthly Excel (admin-protected)
+  downloadGstMonthlyExcel: async (month) => {
+    const token = getAdminToken();
+    const params = new URLSearchParams();
+    if (month) params.set("month", month);
+
+    const response = await fetch(
+      `${API_BASE_URL}/admin/orders/gst-export${params.toString() ? `?${params.toString()}` : ""}`,
+      {
+        method: "GET",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }
+    );
+
+    const refreshedToken = response.headers.get("x-auth-token");
+    if (refreshedToken) {
+      localStorage.setItem(STORAGE_KEYS.ADMIN_TOKEN, refreshedToken);
+    }
+
+    if (!response.ok) {
+      const message = response.status === 401 || response.status === 403
+        ? "Admin session expired. Please log in again."
+        : "Failed to download GST monthly Excel";
+
+      if (response.status === 400 || response.status === 401 || response.status === 403) {
+        localStorage.removeItem(STORAGE_KEYS.ADMIN_TOKEN);
+        localStorage.removeItem(STORAGE_KEYS.IS_ADMIN);
+        localStorage.removeItem(STORAGE_KEYS.ADMIN_ROLE);
+        const err = new Error(message);
+        err.isAdminTokenError = true;
+        err.status = response.status;
+        throw err;
+      }
+
+      throw new Error(message);
+    }
+
+    const blob = await response.blob();
+    const objectUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = `gst-details-${month || "current-month"}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(objectUrl);
   },
 
   // Banners (billboard) CMS
@@ -1189,6 +1377,36 @@ export const superadminAPI = {
   },
 };
 
+/** Admin-only read; public recording is done from useTrackPageVisit via fetch. */
+export const analyticsAPI = {
+  getSummary: async () => {
+    const { data } = await adminApiRequest('/analytics/summary');
+    return data;
+  },
+  getPages: async () => {
+    const { data } = await adminApiRequest('/analytics/pages');
+    return data;
+  },
+  getDaily: async (days = 30) => {
+    const n = Math.min(Math.max(Number(days) || 30, 1), 366);
+    const { data } = await adminApiRequest(`/analytics/daily?days=${encodeURIComponent(n)}`);
+    return data;
+  },
+  /** Order line-item sales (excludes cancelled orders). Omit days or use days=all for all time. */
+  getSales: async ({ days, limit = 100 } = {}) => {
+    const params = new URLSearchParams();
+    if (days != null && days !== '' && String(days).toLowerCase() !== 'all') {
+      const n = Math.min(Math.max(Number(days) || 0, 1), 3660);
+      params.set('days', String(n));
+    }
+    const lim = Math.min(Math.max(Number(limit) || 100, 1), 200);
+    params.set('limit', String(lim));
+    const qs = params.toString();
+    const { data } = await adminApiRequest(`/analytics/sales?${qs}`);
+    return data;
+  },
+};
+
 export default {
   productAPI,
   categoryAPI,
@@ -1207,4 +1425,5 @@ export default {
   userAPI,
   adminAPI,
   superadminAPI,
+  analyticsAPI,
 };

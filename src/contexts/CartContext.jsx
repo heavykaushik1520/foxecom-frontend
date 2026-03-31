@@ -12,10 +12,22 @@ export const useCart = () => {
   return context
 }
 
+// Backend guestCartController only accepts a positive integer (not UUIDs).
+function isValidApiGuestCartId(value) {
+  if (value == null || typeof value !== 'string') return false
+  const s = value.trim()
+  if (!/^\d+$/.test(s)) return false
+  const n = Number(s)
+  return Number.isInteger(n) && n > 0
+}
+
 // Helper to get or create guest cart ID
 const getGuestCartId = () => {
   let guestCartId = localStorage.getItem(STORAGE_KEYS.GUEST_CART_ID)
-  if (!guestCartId) {
+  if (!isValidApiGuestCartId(guestCartId)) {
+    if (guestCartId) {
+      localStorage.removeItem(STORAGE_KEYS.GUEST_CART_ID)
+    }
     guestCartId = Math.floor(100000 + Math.random() * 900000).toString()
     localStorage.setItem(STORAGE_KEYS.GUEST_CART_ID, guestCartId)
   }
@@ -47,15 +59,13 @@ export const CartProvider = ({ children }) => {
     try {
       setIsMerging(true)
       const guestCartId = localStorage.getItem(STORAGE_KEYS.GUEST_CART_ID)
-      if (guestCartId) {
+      if (isValidApiGuestCartId(guestCartId)) {
         await userCartAPI.mergeGuestCart(guestCartId)
-        // Clear guest cart ID immediately after successful merge to prevent re-merging
         localStorage.removeItem(STORAGE_KEYS.GUEST_CART_ID)
         setHasMerged(true)
-        // Reload cart after merge
         await loadCart()
       } else {
-        // No guest cart to merge, just mark as merged and load user cart
+        if (guestCartId) localStorage.removeItem(STORAGE_KEYS.GUEST_CART_ID)
         setHasMerged(true)
         await loadCart()
       }
@@ -133,6 +143,7 @@ export const CartProvider = ({ children }) => {
               const imagePath = p.images?.[0]?.imageUrl || p.thumbnailImage
               return {
                 id: p.id,
+                slug: p.slug,
                 title: p.title,
                 price: parseFloat(p.price),
                 discountPrice: p.discountPrice ? parseFloat(p.discountPrice) : null,
@@ -163,6 +174,7 @@ export const CartProvider = ({ children }) => {
                   const imagePath = p.images?.[0]?.imageUrl || p.thumbnailImage
                   return {
                     id: p.id,
+                    slug: p.slug,
                     title: p.title,
                     price: parseFloat(p.price),
                     discountPrice: p.discountPrice ? parseFloat(p.discountPrice) : null,
@@ -208,6 +220,7 @@ export const CartProvider = ({ children }) => {
               const imagePath = p.images?.[0]?.imageUrl || p.thumbnailImage
               return {
                 id: p.id,
+                slug: p.slug,
                 title: p.title,
                 price: parseFloat(p.price),
                 discountPrice: p.discountPrice ? parseFloat(p.discountPrice) : null,

@@ -27,9 +27,13 @@ const BestSellers = ({ limit = 8 }) => {
           products.map(async (p) => {
             try {
               const data = await reviewAPI.getByProduct(p.id);
-              return [p.id, { averageRating: data.averageRating || 0, reviewCount: data.totalCount ?? data.reviews?.length ?? 0 }];
+              return [p.id, {
+                averageRating: data.averageRating || 0,
+                reviewCount: data.totalCount ?? data.reviews?.length ?? 0,
+                fiveStarCount: Number(data?.distribution?.[5]) || 0,
+              }];
             } catch {
-              return [p.id, { averageRating: 0, reviewCount: 0 }];
+              return [p.id, { averageRating: 0, reviewCount: 0, fiveStarCount: 0 }];
             }
           })
         );
@@ -151,6 +155,7 @@ const BestSellers = ({ limit = 8 }) => {
                   images: product.images,
                   rating: ratingsMap[product.id]?.averageRating ?? product.rating ?? product.averageRating ?? 0,
                   reviewCount: ratingsMap[product.id]?.reviewCount ?? product.reviewCount ?? product.reviewsCount ?? 0,
+                  fiveStarCount: ratingsMap[product.id]?.fiveStarCount ?? product?.ratingSummary?.count5 ?? product?.count5 ?? 0,
                   inStock: product.inStock !== false,
                   category: product.category,
                   sku: product.sku ?? '',

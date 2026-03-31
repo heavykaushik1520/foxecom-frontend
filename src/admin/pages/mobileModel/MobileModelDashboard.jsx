@@ -152,9 +152,7 @@ const MobileModelDashboard = () => {
               />
             </div>
             <div className="col-md-6 text-end">
-              <p className="mb-0 text-muted">
-                Showing {models.length} of {pagination.totalItems} models
-              </p>
+              {/* Intentionally hide "Showing X of Y models" summary. */}
             </div>
           </div>
         </div>
@@ -287,9 +285,7 @@ const MobileModelDashboard = () => {
               {/* Pagination */}
               {pagination.totalPages > 1 && (
                 <div className="d-flex justify-content-between align-items-center mt-4">
-                  <div className="text-muted">
-                    Page {pagination.page} of {pagination.totalPages} ({pagination.totalItems} total models)
-                  </div>
+                  <div />
                   <div className="btn-group">
                     <button
                       className="btn btn-outline-primary"

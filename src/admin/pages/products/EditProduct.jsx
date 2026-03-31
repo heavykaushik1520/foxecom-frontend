@@ -15,6 +15,7 @@ const EditProduct = () => {
   const [discountPrice, setDiscountPrice] = useState("");
   const [stock, setStock] = useState("");
   const [sku, setSku] = useState("");
+  const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
 
   const [thumbnail, setThumbnail] = useState(null);
@@ -59,6 +60,7 @@ const EditProduct = () => {
       setDiscountPrice(product.discountPrice || "");
       setStock(product.stock || "");
       setSku(product.sku || "");
+      setSlug(product.slug || "");
       setDescription(product.description || "");
       setExistingImages(product.images || []);
 
@@ -134,6 +136,7 @@ const EditProduct = () => {
       if (discountPrice) formData.append("discountPrice", discountPrice);
       if (stock) formData.append("stock", stock);
       if (sku) formData.append("sku", sku);
+      formData.append("slug", slug.trim());
       if (description) formData.append("description", description);
 
       if (thumbnail) {
@@ -310,6 +313,25 @@ const EditProduct = () => {
                     value={sku}
                     onChange={(e) => setSku(e.target.value)}
                   />
+                </div>
+              </div>
+              <div className="col-md-6">
+                <div className="mb-3">
+                  <label htmlFor="slug" className="form-label">
+                    URL slug
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="slug"
+                    value={slug}
+                    onChange={(e) => setSlug(e.target.value)}
+                    placeholder="e.g. leather-case-iphone-15"
+                    autoComplete="off"
+                  />
+                  <small className="text-muted">
+                    Lowercase letters, numbers, hyphens. Clear to remove slug (storefront will use numeric ID).
+                  </small>
                 </div>
               </div>
             </div>

@@ -33,7 +33,9 @@ function getDistribution(reviews, distributionCounts = null, totalCount = 0) {
 const ProductRatingExpandable = ({
   averageRating = 0,
   totalCount = 0,
+  displayCount = null,
   productId = null,
+  productLinkSegment = null,
   distribution: distributionProp = null,
   onSeeReviews = null,
   starSize = "0.95rem",
@@ -73,11 +75,15 @@ const ProductRatingExpandable = ({
   }, [productId, distributionProp]);
 
   const hasReviews = totalCount > 0;
+  const countToDisplay =
+    Number.isFinite(Number(displayCount)) && Number(displayCount) >= 0
+      ? Number(displayCount)
+      : totalCount;
 
   if (!hasReviews) {
     return (
-      <span className="text-muted small d-flex align-items-center gap-1">
-        <i className="bi bi-star" style={{ fontSize: starSize }} aria-hidden />
+      <span className="small d-flex align-items-center gap-1" style={{ color: "#000" }}>
+        <i className="bi bi-star" style={{ fontSize: starSize, color: "#000" }} aria-hidden />
         No reviews
       </span>
     );
@@ -89,7 +95,8 @@ const ProductRatingExpandable = ({
         <StarDisplay rating={averageRating} size={starSize} />
         <button
           type="button"
-          className="product-rating-expandable-trigger btn btn-link p-0 border-0 text-decoration-none text-muted small d-flex align-items-center"
+          className="product-rating-expandable-trigger btn btn-link p-0 border-0 text-decoration-none small d-flex align-items-center"
+          style={{ color: "#000" }}
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -97,8 +104,12 @@ const ProductRatingExpandable = ({
           }}
           aria-label="View rating breakdown"
         >
-          {showCount && <span className="ms-1">({totalCount})</span>}
-          <i className="bi bi-chevron-down ms-0 ms-sm-1 product-rating-expandable-chevron" aria-hidden />
+          {showCount && <span className="ms-1" style={{ color: "#000" }}>({countToDisplay})</span>}
+          <i
+            className="bi bi-chevron-down ms-0 ms-sm-1 product-rating-expandable-chevron"
+            style={{ color: "#000" }}
+            aria-hidden
+          />
         </button>
       </div>
 
@@ -109,6 +120,7 @@ const ProductRatingExpandable = ({
         totalCount={totalCount}
         distribution={loadingDistribution ? {} : distribution}
         productId={productPage ? null : productId}
+        productLinkSegment={productPage ? null : productLinkSegment}
         onSeeReviews={productPage ? onSeeReviews : null}
       />
     </>

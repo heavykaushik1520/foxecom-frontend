@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination } from 'swiper/modules';
-import { productAPI, reviewAPI } from '../utils/api';
+import { productAPI, reviewAPI, categoryAPI } from '../utils/api';
 import { useCart } from '../contexts/CartContext';
 import ProductCard from './ProductCard';
 import 'swiper/css';
@@ -13,11 +13,35 @@ const FeaturedProducts = ({ title = 'Featured Products', categoryId = null, limi
   const { addToCart } = useCart();
   const [products, setProducts] = useState([]);
   const [ratingsMap, setRatingsMap] = useState({});
+  const [categorySlug, setCategorySlug] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     loadProducts();
+  }, [categoryId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadCategorySlug = async () => {
+      if (!categoryId) {
+        setCategorySlug(null);
+        return;
+      }
+      try {
+        const data = await categoryAPI.getById(categoryId);
+        const category = data.category || data;
+        if (!cancelled) {
+          setCategorySlug(category?.slug || null);
+        }
+      } catch (err) {
+        if (!cancelled) setCategorySlug(null);
+      }
+    };
+    loadCategorySlug();
+    return () => {
+      cancelled = true;
+    };
   }, [categoryId]);
 
   useEffect(() => {
@@ -28,9 +52,13 @@ const FeaturedProducts = ({ title = 'Featured Products', categoryId = null, limi
           products.map(async (p) => {
             try {
               const data = await reviewAPI.getByProduct(p.id);
-              return [p.id, { averageRating: data.averageRating || 0, reviewCount: data.totalCount ?? data.reviews?.length ?? 0 }];
+              return [p.id, {
+                averageRating: data.averageRating || 0,
+                reviewCount: data.totalCount ?? data.reviews?.length ?? 0,
+                fiveStarCount: Number(data?.distribution?.[5]) || 0,
+              }];
             } catch {
-              return [p.id, { averageRating: 0, reviewCount: 0 }];
+              return [p.id, { averageRating: 0, reviewCount: 0, fiveStarCount: 0 }];
             }
           })
         );
@@ -88,7 +116,7 @@ const FeaturedProducts = ({ title = 'Featured Products', categoryId = null, limi
             <h2 className="display-7 text-center text-dark text-uppercase mb-0">{title}</h2>
             {showViewAll && (
               <Link 
-                to={categoryId ? `/shop?categoryId=${categoryId}` : '/shop'} 
+                to={categorySlug ? `/shop?categorySlug=${categorySlug}` : (categoryId ? `/shop?categoryId=${categoryId}` : '/shop')} 
                 className="btn text-uppercase"
                 style={{
                   borderColor: '#89bb56',
@@ -170,6 +198,7 @@ const FeaturedProducts = ({ title = 'Featured Products', categoryId = null, limi
                   images: product.images,
                   rating: ratingsMap[product.id]?.averageRating ?? product.rating ?? product.averageRating ?? 0,
                   reviewCount: ratingsMap[product.id]?.reviewCount ?? product.reviewCount ?? product.reviewsCount ?? 0,
+                  fiveStarCount: ratingsMap[product.id]?.fiveStarCount ?? product?.ratingSummary?.count5 ?? product?.count5 ?? 0,
                   inStock: product.inStock !== false,
                   category: product.category,
                   sku: product.sku ?? '',

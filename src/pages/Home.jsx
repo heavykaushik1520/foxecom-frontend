@@ -6,6 +6,7 @@ import { categoryAPI } from '../utils/api'
 const BuyOneGetOne = lazy(() => import('../components/BuyOneGetOne'))
 const DealOfTheWeek = lazy(() => import('../components/DealOfTheWeek'))
 const FeaturedProducts = lazy(() => import('../components/FeaturedProducts'))
+const FoxcomOriginals = lazy(() => import('../components/FoxcomOriginals'))
 const MobileProducts = lazy(() => import('../components/MobileProducts'))
 const BestSellers = lazy(() => import('../components/BestSellers'))
 
@@ -60,6 +61,11 @@ const Home = () => {
           limit={8}
           showViewAll={true}
         />
+      </Suspense>
+
+      {/* FOXECOM Originals Section */}
+      <Suspense fallback={null}>
+        <FoxcomOriginals />
       </Suspense>
       
       {/* Mobile Products Carousel */}

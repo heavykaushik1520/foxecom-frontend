@@ -1,5 +1,6 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { adminAPI } from "../../utils/api";
 
 const Sidebar = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
@@ -14,11 +15,14 @@ const Sidebar = ({ isOpen, onClose }) => {
   // Navigation items
   const navItems = [
     { path: "/admin/dashboard", label: "Dashboard" },
+    { path: "/admin/dashboard#live-visitors", label: "Live visitors" },
+    { path: "/admin/analytics", label: "Analytics" },
     { path: "/admin/categories", label: "Categories" },
     { path: "/admin/products", label: "Products" },
     { path: "/admin/banners", label: "Banners" },
     { path: "/admin/buy-one-get-one", label: "Buy One Get One" },
     { path: "/admin/deal-of-the-week", label: "Deal of the Week" },
+    { path: "/admin/foxcom-originals", label: "FOXECOM Originals" },
     { path: "/admin/reviews", label: "Product Reviews" },
     { path: "/admin/orders", label: "Orders" },
     { path: "/admin/users", label: "Users" },
@@ -31,6 +35,19 @@ const Sidebar = ({ isOpen, onClose }) => {
   const handleLinkClick = () => {
     if (window.innerWidth < 768 && typeof onClose === "function") {
       onClose();
+    }
+  };
+
+  const handleDownloadMetaFeed = async () => {
+    try {
+      await adminAPI.downloadMetaProductFeed();
+      handleLinkClick();
+    } catch (error) {
+      if (error?.isAdminTokenError) {
+        navigate("/admin/login", { replace: true });
+        return;
+      }
+      window.alert(error?.message || "Failed to download Meta CSV feed.");
     }
   };
 
@@ -71,6 +88,13 @@ const Sidebar = ({ isOpen, onClose }) => {
 
         {/* Logout */}
         <div className="mt-auto pt-3 border-top">
+          <button
+            type="button"
+            className="btn btn-outline-primary w-100 mb-2"
+            onClick={handleDownloadMetaFeed}
+          >
+            Download Meta CSV Feed
+          </button>
           <button className="btn btn-danger w-100" onClick={handleLogout}>
             Logout
           </button>
@@ -121,6 +145,13 @@ const Sidebar = ({ isOpen, onClose }) => {
 
         {/* Logout */}
         <div className="mt-auto pt-3 border-top">
+          <button
+            type="button"
+            className="btn btn-outline-primary w-100 mb-2"
+            onClick={handleDownloadMetaFeed}
+          >
+            Download Meta CSV Feed
+          </button>
           <button className="btn btn-danger w-100" onClick={handleLogout}>
             Logout
           </button>

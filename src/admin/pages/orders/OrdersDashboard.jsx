@@ -21,6 +21,11 @@ const OrdersDashboard = () => {
     minAmount: "",
     maxAmount: ""
   });
+  const [gstMonth, setGstMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  });
+  const [downloadingGst, setDownloadingGst] = useState(false);
 
   useEffect(() => {
     const hasFilters = Object.values(filters).some(v => v !== "");
@@ -138,6 +143,19 @@ const OrdersDashboard = () => {
     return `₹${parseFloat(amount || 0).toFixed(2)}`;
   };
 
+  const handleDownloadGstExcel = async () => {
+    try {
+      setDownloadingGst(true);
+      setError("");
+      await adminAPI.downloadGstMonthlyExcel(gstMonth);
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Unable to download GST monthly excel");
+    } finally {
+      setDownloadingGst(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '50vh' }}>
@@ -152,6 +170,24 @@ const OrdersDashboard = () => {
     <div>
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
         <h4 className="mb-2 mb-md-0">Orders Management</h4>
+        <div className="d-flex align-items-end gap-2">
+          <div>
+            <label className="form-label small fw-semibold mb-1">GST Month</label>
+            <input
+              type="month"
+              className="form-control form-control-sm"
+              value={gstMonth}
+              onChange={(e) => setGstMonth(e.target.value)}
+            />
+          </div>
+          <button
+            className="btn btn-sm btn-success"
+            onClick={handleDownloadGstExcel}
+            disabled={downloadingGst}
+          >
+            {downloadingGst ? "Downloading..." : "Download GST Excel"}
+          </button>
+        </div>
       </div>
 
       {error && (

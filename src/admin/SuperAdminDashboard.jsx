@@ -288,7 +288,10 @@ function SuperAdminDashboard() {
                                 <div className="p-3 small">
                                   <div className="row g-3">
                                     <div className="col-12">
-                                      <strong>Address:</strong> {order.fullAddress}, {order.townOrCity}, {order.state} {order.pinCode}, {order.country}
+                                      <strong>Address:</strong>{" "}
+                                      {order.flatNumber && <>Flat: {order.flatNumber}, </>}
+                                      {order.buildingName && <>{order.buildingName}, </>}
+                                      {order.fullAddress}, {order.townOrCity}, {order.state} {order.pinCode}, {order.country}
                                     </div>
                                     {(order.payuTxnId || order.payuPaymentId || order.bankRefNo) && (
                                       <div className="col-12">

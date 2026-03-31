@@ -1,7 +1,46 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '../contexts/CartContext'
-import { checkoutAPI, orderAPI, paymentAPI } from '../utils/api'
+import { checkoutAPI, orderAPI, paymentAPI, userAuthAPI } from '../utils/api'
+
+const INDIAN_STATES_AND_UTS = [
+  "Andhra Pradesh",
+  "Arunachal Pradesh",
+  "Assam",
+  "Bihar",
+  "Chhattisgarh",
+  "Goa",
+  "Gujarat",
+  "Haryana",
+  "Himachal Pradesh",
+  "Jharkhand",
+  "Karnataka",
+  "Kerala",
+  "Madhya Pradesh",
+  "Maharashtra",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
+  "Odisha",
+  "Punjab",
+  "Rajasthan",
+  "Sikkim",
+  "Tamil Nadu",
+  "Telangana",
+  "Tripura",
+  "Uttar Pradesh",
+  "Uttarakhand",
+  "West Bengal",
+  "Andaman and Nicobar Islands",
+  "Chandigarh",
+  "Dadra and Nagar Haveli and Daman and Diu",
+  "Delhi",
+  "Jammu and Kashmir",
+  "Ladakh",
+  "Lakshadweep",
+  "Puducherry",
+];
 
 const Checkout = () => {
   const { cartItems, getCartTotal, clearCart, isLoggedIn, updateQuantity } = useCart()
@@ -26,6 +65,34 @@ const Checkout = () => {
   const [processingPayment, setProcessingPayment] = useState(false)
   const [preferredPaymentMethod, setPreferredPaymentMethod] = useState('OTHER')
 
+  // Auto-fill email from logged-in customer profile (but keep it editable).
+  useEffect(() => {
+    const fillEmail = async () => {
+      if (!isLoggedIn) return
+      try {
+        const user = await userAuthAPI.getCurrentUser()
+        const email = user?.email
+        if (!email) return
+
+        setFormData((prev) => {
+          // Only fill if empty so customer's manual edits aren't overwritten.
+          if (prev.emailAddress && prev.emailAddress.trim() !== "") return prev
+          return { ...prev, emailAddress: email }
+        })
+      } catch (err) {
+        console.error('Failed to fetch customer email:', err)
+      }
+    }
+
+    fillEmail()
+  }, [isLoggedIn])
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && typeof window.fbq === "function") {
+      window.fbq("track", "InitiateCheckout");
+    }
+  }, []);
+  
   useEffect(() => {
     // Check login status and cart items whenever they change
     if (!isLoggedIn) {
@@ -201,314 +268,320 @@ const Checkout = () => {
 
   return (
     <div className="padding-large">
-        <div className="container">
-          <h1 className="h2 h-md-3 text-uppercase mb-4 fw-bold" style={{ fontSize: 'clamp(1.5rem, 4vw, 2rem)' }}>Checkout</h1>
+      <div className="container">
+        <h1 className="h2 h-md-3 text-uppercase mb-4 fw-bold" style={{ fontSize: 'clamp(1.5rem, 4vw, 2rem)' }}>Checkout</h1>
 
-          <div className="row">
-            <div className="col-lg-8">
-              <div className="card">
-                <div className="card-header">
-                  <h5 className="mb-0 fw-semibold" style={{ fontSize: '1.1rem' }}>Shipping Information</h5>
-                </div>
-                <div className="card-body">
-                  <form onSubmit={handleSubmit}>
-                    <div className="row mb-3">
-                      <div className="col-md-6">
-                        <label className="form-label">First Name *</label>
-                        <input
-                          type="text"
-                          className={`form-control ${errors.firstName ? 'is-invalid' : ''}`}
-                          name="firstName"
-                          value={formData.firstName}
-                          onChange={handleChange}
-                          required
-                        />
-                        {errors.firstName && <div className="invalid-feedback">{errors.firstName}</div>}
-                      </div>
-                      <div className="col-md-6">
-                        <label className="form-label">Last Name *</label>
-                        <input
-                          type="text"
-                          className={`form-control ${errors.lastName ? 'is-invalid' : ''}`}
-                          name="lastName"
-                          value={formData.lastName}
-                          onChange={handleChange}
-                          required
-                        />
-                        {errors.lastName && <div className="invalid-feedback">{errors.lastName}</div>}
-                      </div>
-                    </div>
-
-                    <div className="row mb-3">
-                      <div className="col-md-6">
-                        <label className="form-label">Email *</label>
-                        <input
-                          type="email"
-                          className={`form-control ${errors.emailAddress ? 'is-invalid' : ''}`}
-                          name="emailAddress"
-                          value={formData.emailAddress}
-                          onChange={handleChange}
-                          required
-                        />
-                        {errors.emailAddress && <div className="invalid-feedback">{errors.emailAddress}</div>}
-                      </div>
-                      <div className="col-md-6">
-                        <label className="form-label">Mobile Number *</label>
-                        <input
-                          type="tel"
-                          className={`form-control ${errors.mobileNumber ? 'is-invalid' : ''}`}
-                          name="mobileNumber"
-                          value={formData.mobileNumber}
-                          onChange={handleChange}
-                          maxLength="10"
-                          required
-                        />
-                        {errors.mobileNumber && <div className="invalid-feedback">{errors.mobileNumber}</div>}
-                      </div>
-                    </div>
-
-                    <div className="row mb-3">
-                      <div className="col-md-6">
-                        <label className="form-label">Flat / House No.*</label>
-                        <input
-                          type="text"
-                          className="form-control"
-                          name="flatNumber"
-                          value={formData.flatNumber}
-                          onChange={handleChange}
-                          maxLength="100"
-                        />
-                      </div>
-                      <div className="col-md-6">
-                        <label className="form-label">Building / House Name *</label>
-                        <input
-                          type="text"
-                          className={`form-control ${errors.buildingName ? 'is-invalid' : ''}`}
-                          name="buildingName"
-                          value={formData.buildingName}
-                          onChange={handleChange}
-                          maxLength="150"
-                          required
-                        />
-                        {errors.buildingName && <div className="invalid-feedback">{errors.buildingName}</div>}
-                      </div>
-                    </div>
-
-                    <div className="mb-3">
-                      <label className="form-label">Full Address *</label>
-                      <textarea
-                        className={`form-control ${errors.fullAddress ? 'is-invalid' : ''}`}
-                        name="fullAddress"
-                        value={formData.fullAddress}
+        <div className="row">
+          <div className="col-lg-8">
+            <div className="card">
+              <div className="card-header">
+                <h5 className="mb-0 fw-semibold" style={{ fontSize: '1.1rem' }}>Shipping Information</h5>
+              </div>
+              <div className="card-body">
+                <form onSubmit={handleSubmit}>
+                  <div className="row mb-3">
+                    <div className="col-md-6">
+                      <label className="form-label">First Name *</label>
+                      <input
+                        type="text"
+                        className={`form-control ${errors.firstName ? 'is-invalid' : ''}`}
+                        name="firstName"
+                        value={formData.firstName}
                         onChange={handleChange}
-                        rows="3"
                         required
                       />
-                      {errors.fullAddress && <div className="invalid-feedback">{errors.fullAddress}</div>}
+                      {errors.firstName && <div className="invalid-feedback">{errors.firstName}</div>}
                     </div>
-
-                    <div className="row mb-3">
-                      <div className="col-md-6">
-                        <label className="form-label">City *</label>
-                        <input
-                          type="text"
-                          className={`form-control ${errors.townOrCity ? 'is-invalid' : ''}`}
-                          name="townOrCity"
-                          value={formData.townOrCity}
-                          onChange={handleChange}
-                          required
-                        />
-                        {errors.townOrCity && <div className="invalid-feedback">{errors.townOrCity}</div>}
-                      </div>
-                      <div className="col-md-6">
-                        <label className="form-label">Pin Code *</label>
-                        <input
-                          type="text"
-                          className={`form-control ${errors.pinCode ? 'is-invalid' : ''}`}
-                          name="pinCode"
-                          value={formData.pinCode}
-                          onChange={handleChange}
-                          maxLength="6"
-                          required
-                        />
-                        {errors.pinCode && <div className="invalid-feedback">{errors.pinCode}</div>}
-                      </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Last Name *</label>
+                      <input
+                        type="text"
+                        className={`form-control ${errors.lastName ? 'is-invalid' : ''}`}
+                        name="lastName"
+                        value={formData.lastName}
+                        onChange={handleChange}
+                        required
+                      />
+                      {errors.lastName && <div className="invalid-feedback">{errors.lastName}</div>}
                     </div>
+                  </div>
 
-                    <div className="row mb-3">
-                      <div className="col-md-6">
-                        <label className="form-label">State *</label>
-                        <input
-                          type="text"
-                          className={`form-control ${errors.state ? 'is-invalid' : ''}`}
-                          name="state"
-                          value={formData.state}
-                          onChange={handleChange}
-                          required
-                        />
-                        {errors.state && <div className="invalid-feedback">{errors.state}</div>}
-                      </div>
-                      <div className="col-md-6">
-                        <label className="form-label">Country *</label>
-                        <select
-                          className={`form-select ${errors.country ? 'is-invalid' : ''}`}
-                          name="country"
-                          value={formData.country}
-                          onChange={handleChange}
-                          required
-                        >
-                          <option value="India">India</option>
-                          <option value="USA">United States</option>
-                          <option value="UK">United Kingdom</option>
-                        </select>
-                        {errors.country && <div className="invalid-feedback">{errors.country}</div>}
-                      </div>
+                  <div className="row mb-3">
+                    <div className="col-md-6">
+                      <label className="form-label">Email *</label>
+                      <input
+                        type="email"
+                        className={`form-control ${errors.emailAddress ? 'is-invalid' : ''}`}
+                        name="emailAddress"
+                        value={formData.emailAddress}
+                        onChange={handleChange}
+                        required
+                      />
+                      {errors.emailAddress && <div className="invalid-feedback">{errors.emailAddress}</div>}
                     </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Mobile Number *</label>
+                      <input
+                        type="tel"
+                        className={`form-control ${errors.mobileNumber ? 'is-invalid' : ''}`}
+                        name="mobileNumber"
+                        value={formData.mobileNumber}
+                        onChange={handleChange}
+                        maxLength="10"
+                        required
+                      />
+                      {errors.mobileNumber && <div className="invalid-feedback">{errors.mobileNumber}</div>}
+                    </div>
+                  </div>
 
-                    <button 
-                      type="submit" 
-                      className="btn btn-primary btn-lg w-100 btn-proceed-payment"
-                      disabled={loading || processingPayment}
-                    >
-                      {processingPayment ? 'Processing Payment...' : loading ? 'Processing...' : 'Proceed to Payment'}
-                    </button>
-                  </form>
-                </div>
+                  <div className="row mb-3">
+                    <div className="col-md-6">
+                      <label className="form-label">Flat / House No.*</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        name="flatNumber"
+                        value={formData.flatNumber}
+                        onChange={handleChange}
+                        maxLength="100"
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Building / House Name *</label>
+                      <input
+                        type="text"
+                        className={`form-control ${errors.buildingName ? 'is-invalid' : ''}`}
+                        name="buildingName"
+                        value={formData.buildingName}
+                        onChange={handleChange}
+                        maxLength="150"
+                        required
+                      />
+                      {errors.buildingName && <div className="invalid-feedback">{errors.buildingName}</div>}
+                    </div>
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label">Full Address *</label>
+                    <textarea
+                      className={`form-control ${errors.fullAddress ? 'is-invalid' : ''}`}
+                      name="fullAddress"
+                      value={formData.fullAddress}
+                      onChange={handleChange}
+                      rows="3"
+                      required
+                    />
+                    {errors.fullAddress && <div className="invalid-feedback">{errors.fullAddress}</div>}
+                  </div>
+
+                  <div className="row mb-3">
+                    <div className="col-md-6">
+                      <label className="form-label">City *</label>
+                      <input
+                        type="text"
+                        className={`form-control ${errors.townOrCity ? 'is-invalid' : ''}`}
+                        name="townOrCity"
+                        value={formData.townOrCity}
+                        onChange={handleChange}
+                        required
+                      />
+                      {errors.townOrCity && <div className="invalid-feedback">{errors.townOrCity}</div>}
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Pin Code *</label>
+                      <input
+                        type="text"
+                        className={`form-control ${errors.pinCode ? 'is-invalid' : ''}`}
+                        name="pinCode"
+                        value={formData.pinCode}
+                        onChange={handleChange}
+                        maxLength="6"
+                        required
+                      />
+                      {errors.pinCode && <div className="invalid-feedback">{errors.pinCode}</div>}
+                    </div>
+                  </div>
+
+                  <div className="row mb-3">
+                    <div className="col-md-6">
+                      <label className="form-label">State *</label>
+                      <select
+                        className={`form-select ${errors.state ? 'is-invalid' : ''}`}
+                        name="state"
+                        value={formData.state}
+                        onChange={handleChange}
+                        required
+                      >
+                        <option value="">Select state</option>
+                        {INDIAN_STATES_AND_UTS.map((state) => (
+                          <option key={state} value={state}>
+                            {state}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.state && <div className="invalid-feedback">{errors.state}</div>}
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Country *</label>
+                      <select
+                        className={`form-select ${errors.country ? 'is-invalid' : ''}`}
+                        name="country"
+                        value={formData.country}
+                        onChange={handleChange}
+                        required
+                      >
+                        <option value="India">India</option>
+                        <option value="USA">United States</option>
+                        <option value="UK">United Kingdom</option>
+                      </select>
+                      {errors.country && <div className="invalid-feedback">{errors.country}</div>}
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="btn btn-primary btn-lg w-100 btn-proceed-payment"
+                    disabled={loading || processingPayment}
+                  >
+                    {processingPayment ? 'Processing Payment...' : loading ? 'Processing...' : 'Proceed to Payment'}
+                  </button>
+                </form>
               </div>
             </div>
+          </div>
 
-            <div className="col-lg-4">
-              <div className="card">
-                <div className="card-header">
-                  <div className="d-flex justify-content-between align-items-center">
-                    <h5 className="mb-0 fw-semibold" style={{ fontSize: '1.1rem' }}>Order Summary</h5>
-                    {isBuyNowMode && (
-                      <span className="badge bg-warning text-dark">
-                        <i className="bi bi-lightning-fill me-1"></i>
-                        Buy Now
-                      </span>
-                    )}
-                  </div>
+          <div className="col-lg-4">
+            <div className="card">
+              <div className="card-header">
+                <div className="d-flex justify-content-between align-items-center">
+                  <h5 className="mb-0 fw-semibold" style={{ fontSize: '1.1rem' }}>Order Summary</h5>
                   {isBuyNowMode && (
-                    <small className="text-muted mt-1 d-block">
-                      You can adjust quantity before checkout
+                    <span className="badge bg-warning text-dark">
+                      <i className="bi bi-lightning-fill me-1"></i>
+                      Buy Now
+                    </span>
+                  )}
+                </div>
+                {isBuyNowMode && (
+                  <small className="text-muted mt-1 d-block">
+                    You can adjust quantity before checkout
+                  </small>
+                )}
+              </div>
+              <div className="card-body">
+                {cartItems.map((item) => (
+                  <div key={item.id} className="mb-3 pb-3 border-bottom">
+                    <div className="d-flex justify-content-between align-items-start mb-2">
+                      <div className="flex-grow-1">
+                        <strong>{item.title}</strong>
+                        {isBuyNowMode && (
+                          <div className="mt-2">
+                            <div className="d-flex align-items-center gap-2">
+                              <label className="small text-muted mb-0">Quantity:</label>
+                              <div className="d-flex align-items-center border rounded">
+                                <button
+                                  type="button"
+                                  className="btn btn-sm btn-outline-secondary"
+                                  onClick={() => {
+                                    const newQty = Math.max(1, item.quantity - 1)
+                                    updateQuantity(item.id, newQty)
+                                  }}
+                                  style={{ border: 'none', borderRadius: 0 }}
+                                >
+                                  <i className="bi bi-dash"></i>
+                                </button>
+                                <span className="px-3" style={{ minWidth: '40px', textAlign: 'center' }}>
+                                  {item.quantity}
+                                </span>
+                                <button
+                                  type="button"
+                                  className="btn btn-sm btn-outline-secondary"
+                                  onClick={() => {
+                                    const maxStock = item.stock || 999
+                                    const newQty = Math.min(maxStock, item.quantity + 1)
+                                    updateQuantity(item.id, newQty)
+                                  }}
+                                  style={{ border: 'none', borderRadius: 0 }}
+                                >
+                                  <i className="bi bi-plus"></i>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        {!isBuyNowMode && (
+                          <small className="text-muted">Qty: {item.quantity}</small>
+                        )}
+                      </div>
+                      <strong className="ms-2">{formatPrice((item.discountPrice || item.price) * item.quantity)}</strong>
+                    </div>
+                  </div>
+                ))}
+                <hr />
+                <div className="d-flex justify-content-between mb-2">
+                  <span>Subtotal</span>
+                  <strong>{formatPrice(summary?.subtotal || getCartTotal())}</strong>
+                </div>
+                {Number(summary?.discountAmount) > 0 && (
+                  <div className="d-flex justify-content-between mb-2 text-success">
+                    <span>{summary?.discountLabel || 'UPI discount'}</span>
+                    <strong>-{formatPrice(summary.discountAmount)}</strong>
+                  </div>
+                )}
+                <div className="mb-3">
+                  <label className="form-label small fw-semibold">Payment method</label>
+                  <div className="d-flex gap-2 flex-wrap">
+                    <label className="d-flex align-items-center gap-2 border rounded px-3 py-2 cursor-pointer flex-grow-1" style={{ minWidth: '140px', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        checked={preferredPaymentMethod === 'UPI'}
+                        onChange={() => setPreferredPaymentMethod('UPI')}
+                        className="form-check-input"
+                      />
+                      <span>UPI</span>
+                      {summary?.nextOrderNumber === 2 && (
+                        <span className="badge bg-success">10% off</span>
+                      )}
+                      {summary?.nextOrderNumber === 3 && (
+                        <span className="badge bg-success">20% off</span>
+                      )}
+                    </label>
+                    <label className="d-flex align-items-center gap-2 border rounded px-3 py-2 cursor-pointer flex-grow-1" style={{ minWidth: '140px', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        checked={preferredPaymentMethod === 'OTHER'}
+                        onChange={() => setPreferredPaymentMethod('OTHER')}
+                        className="form-check-input"
+                      />
+                      <span>Card / Net Banking / Other</span>
+                    </label>
+                  </div>
+                  {summary?.nextOrderNumber >= 2 && summary?.nextOrderNumber <= 3 && (
+                    <small className="text-muted d-block mt-1">
+                      {summary.nextOrderNumber === 2 && 'Pay with UPI on your 2nd order to get 10% off.'}
+                      {summary.nextOrderNumber === 3 && 'Pay with UPI on your 3rd order to get 20% off.'}
+                      {summary.nextOrderNumber >= 4 && 'No repeat-purchase discount on 4th order onwards.'}
                     </small>
                   )}
                 </div>
-                <div className="card-body">
-                  {cartItems.map((item) => (
-                    <div key={item.id} className="mb-3 pb-3 border-bottom">
-                      <div className="d-flex justify-content-between align-items-start mb-2">
-                        <div className="flex-grow-1">
-                          <strong>{item.title}</strong>
-                          {isBuyNowMode && (
-                            <div className="mt-2">
-                              <div className="d-flex align-items-center gap-2">
-                                <label className="small text-muted mb-0">Quantity:</label>
-                                <div className="d-flex align-items-center border rounded">
-                                  <button
-                                    type="button"
-                                    className="btn btn-sm btn-outline-secondary"
-                                    onClick={() => {
-                                      const newQty = Math.max(1, item.quantity - 1)
-                                      updateQuantity(item.id, newQty)
-                                    }}
-                                    style={{ border: 'none', borderRadius: 0 }}
-                                  >
-                                    <i className="bi bi-dash"></i>
-                                  </button>
-                                  <span className="px-3" style={{ minWidth: '40px', textAlign: 'center' }}>
-                                    {item.quantity}
-                                  </span>
-                                  <button
-                                    type="button"
-                                    className="btn btn-sm btn-outline-secondary"
-                                    onClick={() => {
-                                      const maxStock = item.stock || 999
-                                      const newQty = Math.min(maxStock, item.quantity + 1)
-                                      updateQuantity(item.id, newQty)
-                                    }}
-                                    style={{ border: 'none', borderRadius: 0 }}
-                                  >
-                                    <i className="bi bi-plus"></i>
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                          {!isBuyNowMode && (
-                            <small className="text-muted">Qty: {item.quantity}</small>
-                          )}
-                        </div>
-                        <strong className="ms-2">{formatPrice((item.discountPrice || item.price) * item.quantity)}</strong>
-                      </div>
-                    </div>
-                  ))}
-                  <hr />
-                  <div className="d-flex justify-content-between mb-2">
-                    <span>Subtotal</span>
-                    <strong>{formatPrice(summary?.subtotal || getCartTotal())}</strong>
-                  </div>
-                  {Number(summary?.discountAmount) > 0 && (
-                    <div className="d-flex justify-content-between mb-2 text-success">
-                      <span>{summary?.discountLabel || 'UPI discount'}</span>
-                      <strong>-{formatPrice(summary.discountAmount)}</strong>
-                    </div>
-                  )}
-                  <div className="mb-3">
-                    <label className="form-label small fw-semibold">Payment method</label>
-                    <div className="d-flex gap-2 flex-wrap">
-                      <label className="d-flex align-items-center gap-2 border rounded px-3 py-2 cursor-pointer flex-grow-1" style={{ minWidth: '140px', cursor: 'pointer' }}>
-                        <input
-                          type="radio"
-                          name="paymentMethod"
-                          checked={preferredPaymentMethod === 'UPI'}
-                          onChange={() => setPreferredPaymentMethod('UPI')}
-                          className="form-check-input"
-                        />
-                        <span>UPI</span>
-                        {summary?.nextOrderNumber === 2 && (
-                          <span className="badge bg-success">10% off</span>
-                        )}
-                        {summary?.nextOrderNumber === 3 && (
-                          <span className="badge bg-success">20% off</span>
-                        )}
-                      </label>
-                      <label className="d-flex align-items-center gap-2 border rounded px-3 py-2 cursor-pointer flex-grow-1" style={{ minWidth: '140px', cursor: 'pointer' }}>
-                        <input
-                          type="radio"
-                          name="paymentMethod"
-                          checked={preferredPaymentMethod === 'OTHER'}
-                          onChange={() => setPreferredPaymentMethod('OTHER')}
-                          className="form-check-input"
-                        />
-                        <span>Card / Net Banking / Other</span>
-                      </label>
-                    </div>
-                    {summary?.nextOrderNumber >= 2 && summary?.nextOrderNumber <= 3 && (
-                      <small className="text-muted d-block mt-1">
-                        {summary.nextOrderNumber === 2 && 'Pay with UPI on your 2nd order to get 10% off.'}
-                        {summary.nextOrderNumber === 3 && 'Pay with UPI on your 3rd order to get 20% off.'}
-                        {summary.nextOrderNumber >= 4 && 'No repeat-purchase discount on 4th order onwards.'}
-                      </small>
-                    )}
-                  </div>
-                  <div className="d-flex justify-content-between mb-2">
-                    <span>Shipping</span>
-                    <span className="text-success">Free</span>
-                  </div>
-                  <hr />
-                  <div className="d-flex justify-content-between">
-                    <strong>Total</strong>
-                    <strong className="h4 text-primary">{formatPrice(summary?.totalAmount || getCartTotal())}</strong>
-                  </div>
+                <div className="d-flex justify-content-between mb-2">
+                  <span>Shipping</span>
+                  <span className="text-success">Free</span>
+                </div>
+                <hr />
+                <div className="d-flex justify-content-between">
+                  <strong>Total</strong>
+                  <strong className="h4 text-primary">{formatPrice(summary?.totalAmount || getCartTotal())}</strong>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-   
+    </div>
+
   )
 }
 

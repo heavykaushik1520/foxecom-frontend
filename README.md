@@ -78,6 +78,24 @@ The production build will be in the `dist` directory.
 npm run preview
 ```
 
+### Production deployment (avoid "Expected JavaScript but got text/html")
+
+After `npm run build`, the output is in `dist/`. Your server **must**:
+
+1. **Serve static files from `dist/`** so that requests like `/assets/index-xxxxx.js` return the actual JS file with `Content-Type: application/javascript`. Do **not** serve `index.html` for `/assets/*` requests.
+2. **Serve `index.html` only** for document requests (e.g. when the path doesn’t match a file in `dist/`), so client-side routing works.
+
+If the server returns HTML for a `.js` request, the browser will show a MIME-type error and the app may crash with "Cannot destructure property 'basename' of ... as it is null." Refreshing the page sometimes fixes it because the main entry loads correctly on a second request. Fix the server config so `/assets/*` are served as static files.
+
+**Example (Node/Express):** Serve `dist` as static first, then fallback to `index.html`:
+
+```js
+app.use(express.static(path.join(__dirname, 'dist')));
+app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'dist', 'index.html')));
+```
+
+**Nginx:** Use `try_files` so existing files are served and only missing paths get `index.html`.
+
 ## Components
 
 ### Main Components

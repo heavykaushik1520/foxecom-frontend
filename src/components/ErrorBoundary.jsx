@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -23,8 +22,19 @@ class ErrorBoundary extends React.Component {
     this.setState({ hasError: false, error: null, errorInfo: null });
   };
 
+  isChunkOrRouterError = () => {
+    const msg = this.state.error?.message || '';
+    return (
+      msg.includes("useContext") && msg.includes("null") ||
+      msg.includes("basename") && msg.includes("null") ||
+      msg.includes("Loading chunk") ||
+      msg.includes("Failed to fetch dynamically imported module")
+    );
+  };
+
   render() {
     if (this.state.hasError) {
+      const isChunkOrRouter = this.isChunkOrRouterError();
       return (
         <div className="container my-5">
           <div className="row justify-content-center">
@@ -48,7 +58,9 @@ class ErrorBoundary extends React.Component {
                   </div>
                   <h2 className="card-title mb-3">Oops! Something went wrong</h2>
                   <p className="text-muted mb-4">
-                    We're sorry, but something unexpected happened. Please try again.
+                    {isChunkOrRouter
+                      ? "A script failed to load (often due to network or cache). Refreshing the page usually fixes it."
+                      : "We're sorry, but something unexpected happened. Please try again."}
                   </p>
                   {process.env.NODE_ENV === 'development' && this.state.error && (
                     <details className="text-start mb-4">
@@ -64,13 +76,13 @@ class ErrorBoundary extends React.Component {
                   <div className="d-flex gap-2 justify-content-center flex-wrap">
                     <button
                       className="btn btn-primary"
-                      onClick={this.handleReset}
+                      onClick={() => window.location.reload()}
                     >
-                      Try Again
+                      {isChunkOrRouter ? 'Refresh page' : 'Try again'}
                     </button>
-                    <Link to="/" className="btn btn-outline-secondary">
-                      Go Home
-                    </Link>
+                    <a href={typeof window !== 'undefined' ? window.location.origin + '/' : '/'} className="btn btn-outline-secondary">
+                      Go home
+                    </a>
                   </div>
                 </div>
               </div>

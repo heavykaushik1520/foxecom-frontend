@@ -93,7 +93,19 @@ const Header = ({ isLoggedIn: isLoggedInProp, setIsLoggedIn: setIsLoggedInProp }
   }, []);
 
   useEffect(() => {
-    const onScroll = () => setHoverBrandId(null);
+    const onScroll = (e) => {
+      // Close the dropdown only when the page itself is scrolling.
+      // Scrolling inside overflow containers (like `.brand-dropdown`) should not dismiss it.
+      const target = e.target;
+      const isPageScrollTarget =
+        target === window ||
+        target === document ||
+        target === document.scrollingElement ||
+        target === document.documentElement;
+
+      if (isPageScrollTarget) setHoverBrandId(null);
+    };
+
     window.addEventListener("scroll", onScroll, true);
     return () => window.removeEventListener("scroll", onScroll, true);
   }, []);

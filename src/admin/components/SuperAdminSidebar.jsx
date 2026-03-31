@@ -1,6 +1,7 @@
 import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { STORAGE_KEYS } from "../../utils/constants";
+import { adminAPI } from "../../utils/api";
 
 const SuperAdminSidebar = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
@@ -19,6 +20,19 @@ const SuperAdminSidebar = ({ isOpen, onClose }) => {
 
   const handleLinkClick = () => {
     if (window.innerWidth < 768 && onClose) onClose();
+  };
+
+  const handleDownloadMetaFeed = async () => {
+    try {
+      await adminAPI.downloadMetaProductFeed();
+      handleLinkClick();
+    } catch (error) {
+      if (error?.isAdminTokenError) {
+        navigate("/admin/login", { replace: true });
+        return;
+      }
+      window.alert(error?.message || "Failed to download Meta CSV feed.");
+    }
   };
 
   const linkClass = ({ isActive }) =>
@@ -60,6 +74,13 @@ const SuperAdminSidebar = ({ isOpen, onClose }) => {
           ))}
         </ul>
         <div className="mt-auto pt-3 border-top">
+          <button
+            type="button"
+            className="btn btn-outline-primary w-100 mb-2"
+            onClick={handleDownloadMetaFeed}
+          >
+            Download Meta CSV Feed
+          </button>
           <button
             type="button"
             className="btn btn-danger w-100"
@@ -112,6 +133,13 @@ const SuperAdminSidebar = ({ isOpen, onClose }) => {
           ))}
         </ul>
         <div className="mt-auto pt-3 border-top">
+          <button
+            type="button"
+            className="btn btn-outline-primary w-100 mb-2"
+            onClick={handleDownloadMetaFeed}
+          >
+            Download Meta CSV Feed
+          </button>
           <button
             type="button"
             className="btn btn-danger w-100"

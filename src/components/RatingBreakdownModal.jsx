@@ -35,6 +35,7 @@ const RatingBreakdownModal = ({
   totalCount = 0,
   distribution = {},
   productId = null,
+  productLinkSegment = null,
   onSeeReviews = null,
 }) => {
   const rows = [5, 4, 3, 2, 1].map((star) => {
@@ -47,10 +48,8 @@ const RatingBreakdownModal = ({
     if (!show) return;
     const handleEscape = (e) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", handleEscape);
-    document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", handleEscape);
-      document.body.style.overflow = "";
     };
   }, [show, onClose]);
 
@@ -80,8 +79,8 @@ const RatingBreakdownModal = ({
           {rows.map(({ star, count }) => (
             <div key={star} className="rating-breakdown-bar-row">
               <span className="rating-breakdown-bar-label d-flex align-items-center gap-2">
-                <StarDisplay rating={star} size="1.1rem" />
-                <span className="text-muted">({count})</span>
+                <StarDisplay rating={star} size="1.2rem" />
+                <span className="text-muted rating-breakdown-row-count">({count})</span>
               </span>
             </div>
           ))}
@@ -102,7 +101,7 @@ const RatingBreakdownModal = ({
               </button>
             ) : productId ? (
               <Link
-                to={`/product/${productId}#reviews`}
+                to={`/product/${productLinkSegment ?? productId}#reviews`}
                 className="rating-breakdown-see-reviews-link"
                 onClick={onClose}
               >
@@ -118,7 +117,7 @@ const RatingBreakdownModal = ({
             onClick={onClose}
             aria-label="Close"
           >
-            <i className="bi bi-x-lg" /> Close
+            <i className="bi bi-x-lg" />
           </button>
         </div>
       </div>

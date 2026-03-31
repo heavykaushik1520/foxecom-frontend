@@ -172,13 +172,20 @@ const MobileCase = () => {
                       <div className="card-footer bg-light">
                         <div className="d-flex justify-content-between align-items-center">
                           <div>
-                            <strong className="text-success">
-                              ₹{parseFloat(item.product?.price || 0).toFixed(2)}
-                            </strong>
-                            {item.product?.discountPrice && (
-                              <span className="text-muted text-decoration-line-through ms-2">
-                                ₹{parseFloat(item.product.discountPrice).toFixed(2)}
-                              </span>
+                            {item.product?.discountPrice &&
+                            parseFloat(item.product.discountPrice) < parseFloat(item.product?.price || 0) ? (
+                              <>
+                                <span className="text-muted text-decoration-line-through">
+                                  ₹{parseFloat(item.product?.price || 0).toFixed(2)}
+                                </span>
+                                <strong className="text-success ms-2">
+                                  ₹{parseFloat(item.product.discountPrice).toFixed(2)}
+                                </strong>
+                              </>
+                            ) : (
+                              <strong className="text-success">
+                                ₹{parseFloat(item.product?.price || 0).toFixed(2)}
+                              </strong>
                             )}
                           </div>
                           <div>

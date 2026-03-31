@@ -1,11 +1,20 @@
 // Application Constants
+// BASENAME must match Vite's base in vite.config.js so script paths and router stay in sync
+const getBasename = () => {
+  if (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) {
+    const b = import.meta.env.BASE_URL;
+    return typeof b === 'string' && b.length ? b : '/';
+  }
+  return '/';
+};
+
 export const APP_CONFIG = {
    BASE_URL: 'https://foxecom.in/backend',
   API_BASE_URL: 'https://foxecom.in/backend/api',
   
   // BASE_URL: 'http://localhost:3000',
   // API_BASE_URL: 'http://localhost:3000/api',
-  BASENAME: '/',
+  BASENAME: getBasename(),
 };
 
 // LocalStorage Keys
@@ -16,6 +25,8 @@ export const STORAGE_KEYS = {
   GUEST_CART_ID: 'guestCartId',
   IS_ADMIN: 'isAdmin',
   USER: 'user',
+  /** Persistent anonymous id for website analytics and live visitor session_id (localStorage) */
+  VISITOR_ID: 'visitorId',
 };
 
 // Pagination Defaults

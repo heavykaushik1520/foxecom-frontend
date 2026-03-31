@@ -113,9 +113,13 @@ const SimilarProducts = ({ product, limit = 8 }) => {
           similarProducts.map(async (p) => {
             try {
               const data = await reviewAPI.getByProduct(p.id);
-              return [p.id, { averageRating: data.averageRating || 0, reviewCount: data.totalCount ?? data.reviews?.length ?? 0 }];
+              return [p.id, {
+                averageRating: data.averageRating || 0,
+                reviewCount: data.totalCount ?? data.reviews?.length ?? 0,
+                fiveStarCount: Number(data?.distribution?.[5]) || 0,
+              }];
             } catch {
-              return [p.id, { averageRating: 0, reviewCount: 0 }];
+              return [p.id, { averageRating: 0, reviewCount: 0, fiveStarCount: 0 }];
             }
           })
         );
@@ -201,6 +205,7 @@ const SimilarProducts = ({ product, limit = 8 }) => {
                   images: similarProduct.images,
                   rating: ratingsMap[similarProduct.id]?.averageRating ?? similarProduct.rating ?? similarProduct.averageRating ?? 0,
                   reviewCount: ratingsMap[similarProduct.id]?.reviewCount ?? similarProduct.reviewCount ?? similarProduct.reviewsCount ?? 0,
+                  fiveStarCount: ratingsMap[similarProduct.id]?.fiveStarCount ?? similarProduct?.ratingSummary?.count5 ?? similarProduct?.count5 ?? 0,
                   inStock: similarProduct.inStock !== false,
                   category: similarProduct.category,
                   sku: similarProduct.sku ?? '',

@@ -1,6 +1,30 @@
 import React, { useState, useEffect } from 'react'
 import { contactAPI } from '../utils/api';
 
+const onlyDigits = (value) => String(value || '').replace(/\D/g, '');
+
+/** Match backend: 10-digit Indian mobile; allows +91 or leading 0. */
+function normalizeIndianMobile10(value) {
+  let digits = onlyDigits(value);
+  if (digits.length === 12 && digits.startsWith('91')) digits = digits.slice(2);
+  if (digits.length === 11 && digits.startsWith('0')) digits = digits.slice(1);
+  return digits;
+}
+
+function isValidIndianMobile10(digits) {
+  return /^[6-9]\d{9}$/.test(digits);
+}
+
+/** Keep field at most 10 digits (Indian mobile); strips non-digits and optional +91 / leading zeros. */
+function sanitizePhoneFieldInput(raw) {
+  let d = onlyDigits(raw);
+  if (d.startsWith("91") && d.length > 10) {
+    d = d.slice(2);
+  }
+  d = d.replace(/^0+/, "");
+  return d.slice(0, 10);
+}
+
 const ContactUs = () => {
   const [form, setForm] = useState({
     name: "",
@@ -22,27 +46,43 @@ const ContactUs = () => {
       [e.target.name]: e.target.value,
     });
   };
+
+  const handlePhoneChange = (e) => {
+    setForm({
+      ...form,
+      phone: sanitizePhoneFieldInput(e.target.value),
+    });
+  };
   
   const handleSubmit = async (e) => {
     e.preventDefault();
      
     // ✅ Basic validation
-    if(
+    if (
       !form.name.trim() ||
       !form.email.trim() ||
       !form.phone.trim() ||
       !form.message.trim()
-    ){
+    ) {
       setError("All fields are required");
       setSuccess("");
       setToastMessage("All fields are required");
       setToastType("error");
       setShowToast(true);
+      setTimeout(() => setError(""), 5000);
+      return;
+    }
 
-       // ⏱️ Error message hide after 5 seconds
-         setTimeout(() => {
-          setError("");
-         }, 5000);
+    const phoneDigits = normalizeIndianMobile10(form.phone);
+    if (!isValidIndianMobile10(phoneDigits)) {
+      const msg =
+        "Please enter a valid 10-digit Indian mobile number (e.g. 9876543210).";
+      setError(msg);
+      setSuccess("");
+      setToastMessage(msg);
+      setToastType("error");
+      setShowToast(true);
+      setTimeout(() => setError(""), 5000);
       return;
     }
     
@@ -52,7 +92,10 @@ const ContactUs = () => {
     setLoading(true);
 
     try {
-      const res = await contactAPI.submit(form);
+      const res = await contactAPI.submit({
+        ...form,
+        phone: phoneDigits,
+      });
       setLoading(false);
       setSuccess(res?.message || "Thank you! We will contact you soon.");
       setToastMessage(res?.message || "Thank you! Your message has been sent successfully.");
@@ -88,7 +131,7 @@ const ContactUs = () => {
   }, [showToast]);
 
   return (
-    <div className="padding-large">
+    <div className="padding-large contact-page">
       {/* Toast Notification */}
       {showToast && (
         <div 
@@ -125,11 +168,11 @@ const ContactUs = () => {
         <div className="row justify-content-center">
           <div className="col-12 col-sm-10 col-md-8 col-lg-7 col-xl-6">
             <div className="card shadow-sm border-0">
-              <div className="card-body p-3 p-md-4 p-lg-5">
+              <div className="card-body p-3 p-md-4 p-lg-4">
                 {/* Header */}
-                <div className="text-center mb-4 mb-md-5">
-                  <h2 className="h3 h-md-2 fw-bold mb-3" style={{ fontSize: 'clamp(1.5rem, 4vw, 2rem)' }}>
-                    CONTACT US
+                <div className="text-center contact-header mb-3 mb-md-4">
+                  <h2 className="h3 fw-bold mb-3 contact-page-title">
+                    CONTACT FOR B2B
                   </h2>
                  
                 </div>
@@ -160,80 +203,76 @@ const ContactUs = () => {
 
                 {/* FORM */}
                 <form onSubmit={handleSubmit} className="contact-form">
-                  <div className="row g-3 g-md-4">
+                  <div className="row g-3">
                     {/* Name */}
                     <div className="col-12 col-md-6">
-                      <label className="form-label fw-semibold mb-2" style={{ fontSize: 'clamp(0.9rem, 2vw, 0.95rem)' }}>
+                      <label className="form-label fw-semibold contact-form-label">
                         Name <span className="text-danger">*</span>
                       </label>
                       <input 
                         type="text"
                         name="name"
-                        className="form-control form-control-lg"
+                        className="form-control contact-input"
                         placeholder="Your name"
                         value={form.name}
                         onChange={handleChange}
-                        style={{ fontSize: 'clamp(0.9rem, 2vw, 1rem)' }}
                       />
                     </div>
 
                     {/* Email */}
                     <div className="col-12 col-md-6">
-                      <label className="form-label fw-semibold mb-2" style={{ fontSize: 'clamp(0.9rem, 2vw, 0.95rem)' }}>
+                      <label className="form-label fw-semibold contact-form-label">
                         Email <span className="text-danger">*</span>
                       </label>
                       <input 
                         type="email"
                         name="email"
-                        className="form-control form-control-lg"
+                        className="form-control contact-input"
                         placeholder="you@example.com"
                         value={form.email}
                         onChange={handleChange}
-                        style={{ fontSize: 'clamp(0.9rem, 2vw, 1rem)' }}
                       />
                     </div>
 
                     {/* Phone */}
                     <div className="col-12 col-md-6">
-                      <label className="form-label fw-semibold mb-2" style={{ fontSize: 'clamp(0.9rem, 2vw, 0.95rem)' }}>
+                      <label className="form-label fw-semibold contact-form-label">
                         Phone <span className="text-danger">*</span>
                       </label>
                       <input 
                         type="tel"
                         name="phone"
-                        className="form-control form-control-lg"
-                        placeholder="Phone number"
+                        className="form-control contact-input"
+                        placeholder="10-digit mobile (e.g. 9876543210)"
+                        inputMode="numeric"
+                        autoComplete="tel"
                         value={form.phone}
-                        onChange={handleChange}
-                        style={{ fontSize: 'clamp(0.9rem, 2vw, 1rem)' }}
+                        onChange={handlePhoneChange}
                       />
                     </div>
 
                     {/* Message */}
                     <div className="col-12">
-                      <label className="form-label fw-semibold mb-2" style={{ fontSize: 'clamp(0.9rem, 2vw, 0.95rem)' }}>
+                      <label className="form-label fw-semibold contact-form-label">
                         Message <span className="text-danger">*</span>
                       </label>
                       <textarea 
                         name="message"
-                        className="form-control form-control-lg"
-                        rows="5"
+                        className="form-control contact-input"
+                        rows="4"
                         placeholder="Write your message..."
                         value={form.message}
                         onChange={handleChange}
-                        style={{ fontSize: 'clamp(0.9rem, 2vw, 1rem)', resize: 'vertical' }}
                       ></textarea>
                     </div>
 
                     {/* Submit Button */}
-                    <div className="col-12 text-center mt-3 mt-md-4">
+                    <div className="col-12 text-center mt-2 mt-md-3">
                       <button 
                         type="submit" 
-                        className="btn btn-primary btn-lg px-4 px-md-5 py-2 py-md-3"
+                        className="btn btn-primary contact-submit-btn"
                         disabled={loading}
                         style={{ 
-                          fontSize: 'clamp(0.95rem, 2vw, 1.1rem)',
-                          minWidth: '150px',
                           fontWeight: '600',
                           position: 'relative',
                           opacity: loading ? 0.7 : 1,
