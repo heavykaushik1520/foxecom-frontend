@@ -98,9 +98,9 @@ const Login = () => {
             <div className="card-body p-3 p-sm-4 p-md-5">
               {/* Title */}
               <div className="text-center mb-3 mb-md-4">
-                <h4 className="fw-bold mb-2 auth-title">
+                <h1 className="h4 fw-bold mb-2 auth-title">
                   {isSignup ? "Sign up" : "Sign in"}
-                </h4>
+                </h1>
                 <p className="text-muted mb-0 auth-subtitle">
                   {isSignup
                     ? "Create your account to get started"
@@ -186,7 +186,7 @@ const Login = () => {
                   <Link
                     to="/forgot-password"
                     className="text-decoration-none fw-medium auth-link-muted"
-                    style={{ color: "#89bb56" }}
+                    style={{ color: "#547535" }}
                   >
                     Forgot password?
                   </Link>
@@ -227,7 +227,7 @@ const Login = () => {
                         type="button"
                         className="btn btn-link p-0 text-decoration-none fw-semibold auth-footer-text"
                         onClick={() => setIsSignup(false)}
-                        style={{ color: "#89bb56" }}
+                        style={{ color: "#547535" }}
                       >
                         Sign in
                       </button>
@@ -238,7 +238,7 @@ const Login = () => {
                       <Link
                         to="/sign-up"
                         className="text-decoration-none fw-semibold auth-footer-text"
-                        style={{ color: "#89bb56" }}
+                        style={{ color: "#547535" }}
                       >
                         Sign up
                       </Link>

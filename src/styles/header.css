@@ -123,7 +123,7 @@ main,
 }
 
 .mobile-sidebar-link:hover {
-  background-color: rgba(137, 187, 86, 0.1);
+  background-color: rgba(84, 117, 53, 0.1);
   color: var(--primary-color);
   transform: translateX(4px);
 }
@@ -139,7 +139,7 @@ main,
 }
 
 .mobile-sidebar-model-link:hover {
-  background-color: rgba(137, 187, 86, 0.1);
+  background-color: rgba(84, 117, 53, 0.1);
   color: var(--primary-color);
   transform: translateX(4px);
 }
@@ -157,7 +157,7 @@ body.mobile-sidebar-open {
 
   main,
   .page-content {
-    padding-top: 100px;
+    padding-top: 60px;
   }
   
   .padding-large {

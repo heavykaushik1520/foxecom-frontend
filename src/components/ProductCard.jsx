@@ -82,18 +82,22 @@ const ProductCard = memo(({ product, onAddToCart, showAddToCart = true, showBuyN
   return (
     <div className="card h-100 shadow-sm product-card">
       <Link to={`/product/${pathSegment}`} className="text-decoration-none">
-        <div className="position-relative" style={{ height: '250px', overflow: 'hidden', backgroundColor: '#f8f9fa' }}>
+        <div
+          className="position-relative product-card-image-wrap"
+          style={{ overflow: 'hidden', backgroundColor: '#f8f9fa' }}
+        >
           <img
             src={imageUrl}
             alt={title}
             className="img-fluid w-100 h-100"
             style={{ objectFit: 'contain', padding: '10px' }}
             loading="lazy"
+            width="500"
+            height="500"
           />
           {hasDiscount && discountPercentage > 0 && (
             <span
-              className="badge bg-danger position-absolute top-0 end-0 m-2"
-              style={{ fontSize: "15px", fontWeight: 900 }}
+              className="badge bg-danger position-absolute top-0 end-0 m-2 product-card-discount-badge"
             >
               -{discountPercentage}%
             </span>
@@ -108,19 +112,19 @@ const ProductCard = memo(({ product, onAddToCart, showAddToCart = true, showBuyN
 
       <div className="card-body d-flex flex-column">
         <Link to={`/product/${pathSegment}`} className="text-decoration-none text-dark">
-          <h5 className="card-title mb-2 fw-semibold product-card-title">
+          <h3 className="h5 card-title mb-2 fw-semibold product-card-title">
             {title}
-          </h5>
+          </h3>
         </Link>
 
-        <div className="mt-auto">
+        <div className="mt-auto product-card-rating-compact-md-mt" >
           {rating !== undefined && (rating > 0 || reviewCount > 0 || fiveStarCount > 0) && (
             <div className="mb-2 product-card-rating-compact">
               <ProductRatingExpandable
                 averageRating={rating}
                 productLinkSegment={pathSegment}
                 totalCount={reviewCount || 0}
-                displayCount={reviewCount || 0}
+                displayCount={fiveStarCount || 0}
                 productId={id}
                 starSize="0.86rem"
                 showCount
@@ -130,42 +134,36 @@ const ProductCard = memo(({ product, onAddToCart, showAddToCart = true, showBuyN
           <div className="d-flex justify-content-between align-items-center mb-0">
             <div>
               {hasDiscount ? (
-                <div className="d-flex align-items-baseline gap-2">
+                <div className="d-flex align-items-baseline gap-2 product-card-price-row">
                   <span
-                    className="h5"
-                    style={{
-                      fontWeight: 900,
-                      lineHeight: 1,
-                      color: "#dc3545",
-                      fontSize: "15px",
-                    }}
+                    className="h5 product-card-discount-inline"
+                    style={{ fontWeight: 900, lineHeight: 1, color: "#dc3545" }}
                   >
                     -{discountPercentage}%
                   </span>
                   <span
-                    className="h5 mb-0"
-                    style={{ fontWeight: 400, color: "#000", fontSize: "15px" }}
+                    className="h5 mb-0 product-card-main-price"
+                    style={{ fontWeight: 600, color: "#000" }}
                   >
-                    Rs.{finalPrice.toFixed(2)}
+                    ₹{finalPrice.toFixed(2)}
                   </span>
-                  <span className="small" style={{ fontWeight: 300, color: "#000", fontSize: "15px" }}>
-                    M.R.P:{" "}
+                  <span className="small product-card-mrp" style={{ fontWeight: 300, color: "#000" }}>
                     <span
-                      className="text-decoration-line-through"
-                      style={{ color: "#000", fontSize: "15px" }}
+                      className="text-decoration-line-through product-card-mrp-value"
+                      style={{ color: "#000" }}
                     >
-                      {price.toFixed(2)}
+                      ₹{price.toFixed(2)}
                     </span>
                   </span>
                 </div>
               ) : (
-                <span className="h5 mb-0" style={{ color: "#000", fontSize: "15px" }}>
-                  Rs.{price.toFixed(2)}
+                <span className="h5 mb-0 product-card-main-price" style={{ color: "#000" }}>
+                  ₹{price.toFixed(2)}
                 </span>
               )}
             </div>
           </div>
-          <p className="text-muted mt-0 mb-0" style={{ fontSize: "12px" }}>FREE SHIPPING</p>
+          <p className="text-muted mt-0 mb-0 product-card-shipping">FREE SHIPPING</p>
 
           {showAddToCart && (
             <div className="d-flex flex-column gap-2">

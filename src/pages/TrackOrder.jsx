@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { orderAPI, API_BASE_URL, BASE_URL } from '../utils/api'
+import OrderTimeline from '../components/OrderTimeline'
 
 const TrackOrder = () => {
   const { id } = useParams()
@@ -12,6 +13,9 @@ const TrackOrder = () => {
   const [error, setError] = useState('')
   const [labelUrl, setLabelUrl] = useState(null)
   const [labelLoading, setLabelLoading] = useState(false)
+  const [cancelLoading, setCancelLoading] = useState(false)
+  const [cancelError, setCancelError] = useState('')
+  const [cancelSuccess, setCancelSuccess] = useState('')
 
   useEffect(() => {
     if (id) loadOrderAndTracking()
@@ -22,20 +26,20 @@ const TrackOrder = () => {
       if (!isRefresh) setLoading(true)
       else setRefreshing(true)
       setError('')
+      setCancelError('')
+      setCancelSuccess('')
 
       const orderData = await orderAPI.getById(id)
       const orderObj = orderData.order || orderData
       setOrder(orderObj)
 
-      if (orderObj?.shipmentId || orderObj?.awbCode) {
-        try {
-          const tracking = await orderAPI.trackOrder(id)
-          setTrackingData(tracking)
-        } catch (trackError) {
-          console.error('Tracking not available:', trackError)
-          if (!trackingData) setTrackingData(null)
-        }
-      } else {
+      // Always fetch tracking payload (stage + timeline + cancel window).
+      // Backend gracefully handles cases where AWB isn't available yet.
+      try {
+        const tracking = await orderAPI.trackOrder(id)
+        setTrackingData(tracking)
+      } catch (trackError) {
+        console.error('Tracking not available:', trackError)
         setTrackingData(null)
       }
     } catch (err) {
@@ -49,6 +53,43 @@ const TrackOrder = () => {
   }
 
   const handleRefresh = () => loadOrderAndTracking(true)
+
+  const handleCancelOrder = async () => {
+    if (!order?.id) return
+    if (cancelLoading) return
+
+    const stage = trackingData?.stage
+    const cancellationWindow = trackingData?.cancellationWindow
+
+    const canCancel =
+      Boolean(stage?.isCancellable) &&
+      Boolean(cancellationWindow)
+
+    if (!canCancel) {
+      setCancelError('Cancellation is not available for this order right now.')
+      return
+    }
+
+    const confirmed = window.confirm(
+      'Are you sure you want to cancel this order?\n\nRefunds (full/partial) are subject to admin review.'
+    )
+    if (!confirmed) return
+
+    setCancelLoading(true)
+    setCancelError('')
+    setCancelSuccess('')
+    try {
+      await orderAPI.cancel(order.id)
+      setCancelSuccess('Order cancelled successfully.')
+      // Refresh stage/timeline/cancel-window after cancellation.
+      await loadOrderAndTracking(true)
+    } catch (err) {
+      console.error('Error cancelling order:', err)
+      setCancelError(err?.message || 'Failed to cancel order')
+    } finally {
+      setCancelLoading(false)
+    }
+  }
 
   const handleGetShippingLabel = async () => {
     if (!order?.id || !order?.awbCode) return
@@ -248,6 +289,32 @@ const TrackOrder = () => {
                 )}
               </div>
             </div>
+
+            {trackingData?.stage &&
+              Array.isArray(trackingData?.timeline) &&
+              trackingData.timeline.length > 0 && (
+                <div className="card mb-4 shadow-sm border-0">
+                  <div className="card-body">
+                    <OrderTimeline
+                      timeline={trackingData.timeline}
+                      stage={trackingData.stage}
+                      cancellationWindow={trackingData.cancellationWindow}
+                      onCancel={handleCancelOrder}
+                      isCanceling={cancelLoading}
+                    />
+                    {cancelError && (
+                      <div className="alert alert-danger mt-3 mb-0" role="alert">
+                        {cancelError}
+                      </div>
+                    )}
+                    {cancelSuccess && (
+                      <div className="alert alert-success mt-3 mb-0" role="alert">
+                        {cancelSuccess}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
             {!hasAwbOrShipment && (
               <div className="card border-0 shadow-sm mb-4">

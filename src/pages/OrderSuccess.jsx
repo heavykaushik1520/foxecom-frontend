@@ -230,7 +230,12 @@ const OrderSuccess = () => {
               />
             </svg>
           </div>
-          <h1 className="h2 h-md-3 text-success mb-3 fw-bold" style={{ fontSize: 'clamp(1.5rem, 4vw, 2rem)' }}>Order Placed Successfully!</h1>
+          <h1
+            className="h2 h-md-3 mb-3 fw-bold"
+            style={{ fontSize: 'clamp(1.5rem, 4vw, 2rem)', color: '#146c43' }}
+          >
+            Order Placed Successfully!
+          </h1>
           <p className="text-muted mb-2" style={{ fontSize: '1rem' }}>
             Thank you for your order. We've received your order and will begin processing it right away.
           </p>
@@ -244,7 +249,7 @@ const OrderSuccess = () => {
           <div className="col-lg-8">
             <div className="card mb-4">
               <div className="card-header bg-light">
-                <h5 className="mb-0">Order Details</h5>
+                <h2 className="mb-0" style={{ fontSize: '1.1rem' }}>Order Details</h2>
               </div>
               <div className="card-body">
                 <div className="row mb-3">
@@ -258,7 +263,9 @@ const OrderSuccess = () => {
                 <div className="row mb-3">
                   <div className="col-md-6">
                     <strong>Status:</strong>{' '}
-                    <span className={`badge bg-${getStatusBadge(order.status)}`}>
+                    <span
+                      className={`badge bg-${getStatusBadge(order.status)} ${order.status === 'pending' || order.status === 'processing' ? 'text-dark' : 'text-white'}`}
+                    >
                       {order.status?.toUpperCase()}
                     </span>
                   </div>
@@ -296,7 +303,7 @@ const OrderSuccess = () => {
             {/* Order Items */}
             <div className="card mb-4">
               <div className="card-header bg-light">
-                <h5 className="mb-0">Order Items</h5>
+                <h2 className="mb-0" style={{ fontSize: '1.1rem' }}>Order Items</h2>
               </div>
               <div className="card-body">
                 {order.orderItems && order.orderItems.length > 0 ? (
@@ -319,6 +326,9 @@ const OrderSuccess = () => {
                                   <img
                                     src={getImageUrl(item.product.images[0].imageUrl)}
                                     alt={item.product.title}
+                                    loading="lazy"
+                                    width="50"
+                                    height="50"
                                     style={{
                                       width: '50px',
                                       height: '50px',
@@ -362,7 +372,7 @@ const OrderSuccess = () => {
             {/* Shipping Address */}
             <div className="card">
               <div className="card-header bg-light">
-                <h5 className="mb-0 fw-semibold" style={{ fontSize: '1.1rem' }}>Shipping Address</h5>
+                <h2 className="mb-0 fw-semibold" style={{ fontSize: '1.1rem' }}>Shipping Address</h2>
               </div>
               <div className="card-body">
                 <p className="mb-1">
@@ -391,7 +401,7 @@ const OrderSuccess = () => {
             {/* Invoice Preview */}
             <div className="card mb-4">
               <div className="card-header bg-light d-flex justify-content-between align-items-center">
-                <h5 className="mb-0">Invoice</h5>
+                <h2 className="mb-0" style={{ fontSize: '1.1rem' }}>Invoice</h2>
                 {/* <button
                   type="button"
                   className="btn btn-sm btn-outline-secondary"
@@ -539,7 +549,7 @@ const OrderSuccess = () => {
           <div className="col-lg-4">
             <div className="card">
               <div className="card-body">
-                <h5 className="card-title mb-4 fw-semibold" style={{ fontSize: '1.1rem' }}>What's Next?</h5>
+                <h2 className="card-title mb-4 fw-semibold" style={{ fontSize: '1.1rem' }}>What's Next?</h2>
                 <ul className="list-unstyled">
                   <li className="mb-3">
                     <strong>1. Order Confirmation</strong>

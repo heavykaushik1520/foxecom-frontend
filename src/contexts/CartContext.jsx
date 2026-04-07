@@ -47,6 +47,22 @@ export const CartProvider = ({ children }) => {
   const [isMerging, setIsMerging] = useState(false)
   const [hasMerged, setHasMerged] = useState(false)
 
+  const [toast, setToast] = useState({
+    open: false,
+    message: '',
+    variant: 'success',
+  })
+
+  const showToast = (message, variant = 'success') => {
+    setToast({ open: true, message, variant })
+  }
+
+  useEffect(() => {
+    if (!toast.open) return
+    const t = setTimeout(() => setToast((prev) => ({ ...prev, open: false })), 3000)
+    return () => clearTimeout(t)
+  }, [toast.open])
+
   const mergeGuestCart = async () => {
     if (!isLoggedIn()) return
     
@@ -266,6 +282,7 @@ export const CartProvider = ({ children }) => {
         await guestCartAPI.addItem(guestCartId, product.id, quantity)
       }
       await loadCart()
+      showToast('product added', 'success')
       return true
     } catch (error) {
       console.error('Error adding to cart:', error)
@@ -395,8 +412,33 @@ export const CartProvider = ({ children }) => {
   }
 
   return (
-    <CartContext.Provider value={value}>
-      {children}
-    </CartContext.Provider>
+    <>
+      <CartContext.Provider value={value}>{children}</CartContext.Provider>
+
+      {toast.open && (
+        <div
+          className="toast-container position-fixed top-0 start-50 translate-middle-x p-2 cart-toast-container"
+          style={{ zIndex: 2000, pointerEvents: 'none' }}
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          <div
+            className={`toast show cart-toast align-items-center text-white border-0 bg-${toast.variant}`}
+            role="status"
+            style={{ pointerEvents: 'auto', position: 'relative' }}
+          >
+            <button
+              type="button"
+              className="cart-toast-close"
+              aria-label="Close"
+              onClick={() => setToast((prev) => ({ ...prev, open: false }))}
+            >
+              ×
+            </button>
+            <div className="toast-body text-white cart-toast-body">{toast.message}</div>
+          </div>
+        </div>
+      )}
+    </>
   )
 }

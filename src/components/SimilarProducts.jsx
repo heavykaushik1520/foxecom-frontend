@@ -138,9 +138,9 @@ const SimilarProducts = ({ product, limit = 8 }) => {
   if (loading) {
     return (
       <section className="similar-products padding-large bg-light">
-        <div className="container">
+        <div className="container similar-products-container">
           <div className="row">
-            <div className="display-header d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+            <div className="display-header d-flex justify-content-between align-items-center mb-0 pb-3 border-bottom">
               <h2 className="display-7 text-dark text-uppercase mb-0">You May Also Like</h2>
             </div>
             <ProductListSkeleton count={limit} />
@@ -156,19 +156,19 @@ const SimilarProducts = ({ product, limit = 8 }) => {
 
   return (
     <section className="similar-products padding-large bg-light">
-      <div className="container">
+      <div className="container similar-products-container">
         <div className="row">
           <div className="col-12">
-            <div className="display-header d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 gap-sm-3 mb-3 mb-md-4 pb-3 border-bottom">
+            <div className="display-header d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-0 gap-sm-3 mb-3 mb-md-4 pb-3 border-bottom">
               <h2 className="display-7 text-dark text-uppercase mb-0" style={{ fontSize: "clamp(1.25rem, 3vw, 1.75rem)" }}>
                 Similar Products
               </h2>
               <Link 
                 to="/shop" 
-                className="btn text-uppercase"
+                className="btn text-uppercase similar-products-view-all"
                 style={{
-                  borderColor: '#89bb56',
-                  color: '#89bb56',
+                  borderColor: '#547535',
+                  color: '#547535',
                   backgroundColor: 'transparent',
                   transition: 'all 0.3s ease',
                   fontSize: 'clamp(0.85rem, 2vw, 0.95rem)',
@@ -176,14 +176,14 @@ const SimilarProducts = ({ product, limit = 8 }) => {
                   whiteSpace: 'nowrap'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#89bb56';
+                  e.currentTarget.style.backgroundColor = '#547535';
                   e.currentTarget.style.color = '#fff';
-                  e.currentTarget.style.borderColor = '#89bb56';
+                  e.currentTarget.style.borderColor = '#547535';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.backgroundColor = 'transparent';
-                  e.currentTarget.style.color = '#89bb56';
-                  e.currentTarget.style.borderColor = '#89bb56';
+                  e.currentTarget.style.color = '#547535';
+                  e.currentTarget.style.borderColor = '#547535';
                 }}
               >
                 View All

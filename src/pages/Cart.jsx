@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../contexts/CartContext'
 import { getImageUrl } from '../utils/api'
@@ -8,10 +8,18 @@ import fallbackImage from '../assest/images/product-item1.jpg'
 const Cart = () => {
   const { cartItems, updateQuantity, removeFromCart, clearCart, getCartTotal, loading, loadCart, isLoggedIn } = useCart()
   const navigate = useNavigate()
+  const [centerToast, setCenterToast] = useState({ open: false, message: '', variant: 'warning' })
+  const navigationTimeoutRef = React.useRef(null)
 
   useEffect(() => {
     loadCart()
   }, [])
+
+  useEffect(() => {
+    if (!centerToast.open) return
+    const t = setTimeout(() => setCenterToast((prev) => ({ ...prev, open: false })), 3000)
+    return () => clearTimeout(t)
+  }, [centerToast.open])
 
   const handleCheckout = () => {
     if (cartItems.length === 0) {
@@ -21,10 +29,13 @@ const Cart = () => {
     
     // Check if user is logged in before proceeding to checkout
     if (!isLoggedIn) {
-      alert('Please login to proceed with checkout')
       // Store the intended destination to redirect after login
       localStorage.setItem('redirectAfterLogin', '/checkout')
-      navigate('/login')
+      setCenterToast({ open: true, message: 'Please login to proceed with checkout', variant: 'warning' })
+      if (navigationTimeoutRef.current) clearTimeout(navigationTimeoutRef.current)
+      navigationTimeoutRef.current = setTimeout(() => {
+        navigate('/login')
+      }, 1200)
       return
     }
     
@@ -70,7 +81,98 @@ const Cart = () => {
   }
 
   return (
-    <div className="padding-large">
+    <div className="padding-large cart-page">
+      {centerToast.open && (
+        <div className="checkout-center-toast-overlay" role="status" aria-live="polite" aria-atomic="true">
+          <div className={`checkout-center-toast checkout-center-toast--${centerToast.variant}`}>
+            {centerToast.message}
+          </div>
+        </div>
+      )}
+      <style>{`
+        @media (max-width: 767px) {
+          .cart-mobile-item-row {
+            align-items: flex-start;
+            gap: 0.75rem;
+          }
+          .cart-mobile-image-link {
+            width: 92px;
+            height: 92px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+            border: 1px solid #eef1f4;
+            border-radius: 10px;
+            flex-shrink: 0;
+            overflow: hidden;
+          }
+          .cart-mobile-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+          }
+          .cart-mobile-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            line-height: 1.3;
+            margin-bottom: 0.35rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+          }
+          .cart-mobile-meta {
+            margin-bottom: 0.15rem !important;
+          }
+          /* Mobile: hide category name to keep cart compact */
+          .cart-mobile-category {
+            display: none !important;
+          }
+          .cart-mobile-price {
+            margin-top: 0.3rem;
+            display: flex;
+            align-items: baseline;
+            gap: 0.5rem;
+            flex-wrap: nowrap;
+          }
+          .cart-mobile-price .text-primary {
+            color: #000 !important;
+          }
+          .cart-mobile-price small {
+            color: #000 !important;
+          }
+          .cart-mobile-price p,
+          .cart-mobile-price small {
+            margin: 0 !important;
+          }
+          .cart-mobile-footer {
+            padding-top: 0.2rem;
+          }
+          .cart-mobile-qty-input {
+            width: 56px !important;
+            font-size: 0.85rem !important;
+            padding: 0.2rem !important;
+          }
+          .cart-action-row .btn {
+            min-height: 34px;
+            font-size: 0.85rem;
+            padding: 0.35rem 0.65rem;
+          }
+
+          .cart-action-row {
+            flex-direction: column !important;
+          }
+
+          .cart-action-row .w-50 {
+            width: 100% !important;
+          }
+
+          .cart-total-price {
+            color: #000 !important;
+          }
+        }
+      `}</style>
         <div className="container">
           <h1 className="h2 h-md-3 text-uppercase mb-3 mb-md-4 fw-bold" style={{ fontSize: 'clamp(1.25rem, 4vw, 2rem)' }}>Shopping Cart</h1>
 
@@ -86,17 +188,19 @@ const Cart = () => {
                       <div key={item.id} className="cart-item mb-4 pb-4 border-bottom">
                         {/* Mobile Layout: Stack vertically */}
                         <div className="d-flex d-md-none flex-column">
-                          <div className="d-flex mb-3">
-                            <Link to={`/product/${getProductPathSegment(item)}`} className="text-decoration-none me-3">
+                          <div className="d-flex mb-3 cart-mobile-item-row">
+                            <Link to={`/product/${getProductPathSegment(item)}`} className="text-decoration-none cart-mobile-image-link">
                               <img
                                 src={getImageUrl(item.thumbnailImage || item.image)}
                                 alt={item.title}
-                                className="img-fluid"
+                                className="img-fluid cart-mobile-image"
+                                loading="lazy"
+                                width="92"
+                                height="92"
                                 style={{ 
-                                  width: '100px', 
-                                  height: '100px', 
-                                  objectFit: 'contain', 
-                                  borderRadius: '8px',
+                                  width: '92px', 
+                                  height: '92px', 
+                                  objectFit: 'contain',
                                   flexShrink: 0
                                 }}
                                 onError={(e) => {
@@ -106,25 +210,27 @@ const Cart = () => {
                             </Link>
                             <div className="flex-grow-1">
                               <Link to={`/product/${getProductPathSegment(item)}`} className="text-decoration-none text-dark">
-                                <h5 className="mb-1 fw-semibold" style={{ fontSize: 'clamp(0.9rem, 2.5vw, 1rem)' }}>{item.title}</h5>
+                                <h2 className="cart-mobile-title" style={{ color: '#212529' }}>{item.title}</h2>
                               </Link>
                               {item.category && (
-                                <p className="text-muted mb-1 small" style={{ fontSize: '0.8rem' }}>Category: <span className="text-capitalize">{item.category}</span></p>
+                                <p className="text-muted small cart-mobile-meta cart-mobile-category" style={{ fontSize: '0.78rem' }}>
+                                  Category: <span className="text-capitalize">{item.category}</span>
+                                </p>
                               )}
                               {item.caseDetails && (
-                                <p className="text-muted mb-1 small" style={{ fontSize: '0.75rem' }}>
+                                <p className="text-muted small cart-mobile-meta" style={{ fontSize: '0.75rem' }}>
                                   {item.caseDetails.brand?.name} {item.caseDetails.model?.name}
                                 </p>
                               )}
-                              <div className="mb-2">
+                              <div className="mb-2 cart-mobile-price">
                                 <p className="text-primary mb-0 fw-bold" style={{ fontSize: 'clamp(0.95rem, 2.5vw, 1.1rem)' }}>{formatPrice(itemPrice)}</p>
                                 {item.discountPrice && (
-                                  <small className="text-muted text-decoration-line-through" style={{ fontSize: '0.75rem' }}>{formatPrice(item.price)}</small>
+                                  <small className="text-decoration-line-through" style={{ fontSize: '0.75rem', color: '#495057' }}>{formatPrice(item.price)}</small>
                                 )}
                               </div>
                             </div>
                           </div>
-                          <div className="d-flex justify-content-between align-items-center">
+                          <div className="d-flex justify-content-between align-items-center cart-mobile-footer">
                             <div className="d-flex align-items-center">
                               <button
                                 className="btn btn-outline-secondary btn-sm"
@@ -133,9 +239,13 @@ const Cart = () => {
                               >
                                 -
                               </button>
+                              <label htmlFor={`cart-mobile-qty-${item.id}`} className="visually-hidden">
+                                Quantity for {item.title}
+                              </label>
                               <input
+                                id={`cart-mobile-qty-${item.id}`}
                                 type="number"
-                                className="form-control text-center mx-2"
+                                className="form-control text-center mx-2 cart-mobile-qty-input"
                                 style={{ width: '60px', fontSize: '0.9rem', padding: '0.25rem' }}
                                 value={item.quantity}
                                 onChange={(e) => {
@@ -172,6 +282,9 @@ const Cart = () => {
                               src={getImageUrl(item.thumbnailImage || item.image)}
                               alt={item.title}
                               className="img-fluid"
+                              loading="lazy"
+                              width="120"
+                              height="120"
                               style={{ width: '120px', height: '120px', objectFit: 'contain', borderRadius: '8px', flexShrink: 0 }}
                               onError={(e) => {
                                 e.target.src = fallbackImage
@@ -181,7 +294,7 @@ const Cart = () => {
 
                           <div className="flex-grow-1 ms-3 ms-md-4">
                             <Link to={`/product/${getProductPathSegment(item)}`} className="text-decoration-none text-dark">
-                              <h5 className="mb-2 fw-semibold" style={{ fontSize: 'clamp(0.95rem, 1.5vw, 1rem)' }}>{item.title}</h5>
+                              <h2 className="mb-2 fw-semibold" style={{ fontSize: 'clamp(0.95rem, 1.5vw, 1rem)', color: '#212529' }}>{item.title}</h2>
                             </Link>
                             {item.category && (
                               <p className="text-muted mb-2 small">Category: <span className="text-capitalize">{item.category}</span></p>
@@ -193,7 +306,7 @@ const Cart = () => {
                             )}
                             <p className="text-primary mb-0 fw-bold" style={{ fontSize: 'clamp(1rem, 1.5vw, 1.1rem)' }}>{formatPrice(itemPrice)}</p>
                             {item.discountPrice && (
-                              <small className="text-muted text-decoration-line-through" style={{ fontSize: '0.85rem' }}>{formatPrice(item.price)}</small>
+                              <small className="text-decoration-line-through" style={{ fontSize: '0.85rem', color: '#495057' }}>{formatPrice(item.price)}</small>
                             )}
                           </div>
 
@@ -205,7 +318,11 @@ const Cart = () => {
                             >
                               -
                             </button>
+                            <label htmlFor={`cart-desktop-qty-${item.id}`} className="visually-hidden">
+                              Quantity for {item.title}
+                            </label>
                             <input
+                              id={`cart-desktop-qty-${item.id}`}
                               type="number"
                               className="form-control text-center mx-2"
                               style={{ width: '80px', fontSize: '0.95rem' }}
@@ -240,12 +357,12 @@ const Cart = () => {
                     )
                   })}
 
-                  <div className="d-flex flex-column flex-sm-row justify-content-between gap-2 gap-sm-1 mt-3">
-                    <Link to="/shop" className="btn btn-primary btn-add-to-cart btn-sm w-100 w-sm-auto">
+                  <div className="d-flex flex-row justify-content-between gap-2 mt-3 cart-action-row">
+                    <Link to="/shop" className="btn btn-primary btn-add-to-cart btn-sm w-50">
                       Continue Shopping
                     </Link>
                     <button
-                      className="btn btn-outline-danger btn-sm w-100 w-sm-auto"
+                      className="btn btn-outline-danger btn-sm w-50"
                       onClick={clearCart}
                     >
                       Clear Cart
@@ -258,7 +375,7 @@ const Cart = () => {
             <div className="col-12 col-lg-4">
               <div className="card mb-3">
                 <div className="card-header">
-                  <h5 className="mb-0 fw-semibold" style={{ fontSize: 'clamp(1rem, 2vw, 1.1rem)' }}>Order Summary</h5>
+                  <h2 className="mb-0 fw-semibold" style={{ fontSize: 'clamp(1rem, 2vw, 1.1rem)' }}>Order Summary</h2>
                 </div>
                 <div className="card-body">
                   <div className="d-flex justify-content-between mb-3" style={{ fontSize: 'clamp(0.85rem, 2vw, 0.95rem)' }}>
@@ -272,7 +389,9 @@ const Cart = () => {
                   <hr />
                   <div className="d-flex justify-content-between mb-4">
                     <strong style={{ fontSize: 'clamp(1rem, 2vw, 1.1rem)' }}>Total</strong>
-                    <strong className="text-primary fw-bold" style={{ fontSize: 'clamp(1.25rem, 3vw, 1.5rem)' }}>{formatPrice(getCartTotal())}</strong>
+                    <strong className="text-primary fw-bold cart-total-price" style={{ fontSize: 'clamp(1.25rem, 3vw, 1.5rem)' }}>
+                      {formatPrice(getCartTotal())}
+                    </strong>
                   </div>
 
                   <button

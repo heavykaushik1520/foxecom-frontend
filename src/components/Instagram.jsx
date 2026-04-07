@@ -25,7 +25,14 @@ const Instagram = () => {
             {instaItems.map((item) => (
               <figure key={item.id} className="instagram-item pe-2">
                 <a href="https://templatesjungle.com/" className="image-link position-relative">
-                  <img src={item.image} alt="instagram" className="insta-image" />
+                  <img
+                    src={item.image}
+                    alt="instagram"
+                    className="insta-image"
+                    loading="lazy"
+                    width="300"
+                    height="300"
+                  />
                   <div className="icon-overlay position-absolute d-flex justify-content-center">
                     <svg className="instagram">
                       <use xlinkHref="#instagram"></use>

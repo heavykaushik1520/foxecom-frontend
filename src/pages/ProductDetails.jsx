@@ -14,6 +14,7 @@ import { getProductPathSegment } from "../utils/productPath";
 import { useCart } from "../contexts/CartContext";
 import SimilarProducts from "../components/SimilarProducts";
 import ProductDetailsTrustStrip from "../components/ProductDetailsTrustStrip";
+import ProductSellerReviews from "../components/ProductSellerReviews";
 import { StarDisplay } from "../components/RatingBreakdownModal";
 import fallbackImage from "../assest/images/product-item1.jpg";
 
@@ -56,6 +57,7 @@ const ProductDetails = () => {
   const layoutRowRef = useRef(null);
   const lastTrackedProductIdRef = useRef(null);
   const reviewFormRef = useRef(null);
+  const ratingOverlayWrapRef = useRef(null);
   const [zoomState, setZoomState] = useState({
     isZoomed: false,
     mouseX: 0,
@@ -225,6 +227,22 @@ const ProductDetails = () => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  useEffect(() => {
+    if (!isMobile || !isRatingOverlayOpen) return;
+
+    const handleOutsidePointer = (event) => {
+      if (!ratingOverlayWrapRef.current) return;
+      if (!ratingOverlayWrapRef.current.contains(event.target)) {
+        setIsRatingOverlayOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handleOutsidePointer);
+    return () => {
+      document.removeEventListener("pointerdown", handleOutsidePointer);
+    };
+  }, [isMobile, isRatingOverlayOpen]);
+
   // Auto-scroll accordion into view when opened
   useEffect(() => {
     const accordionElement = accordionRef.current;
@@ -379,7 +397,7 @@ const ProductDetails = () => {
           });
         }
 
-        alert(`${product.title} added to cart!`);
+        // Success handled by CartContext toast
       }
     }
   };
@@ -415,7 +433,7 @@ const ProductDetails = () => {
   };
 
   const formatPrice = (price) => {
-    return `Rs.${parseFloat(price).toFixed(2)}`;
+    return `₹${parseFloat(price).toFixed(2)}`;
   };
 
   const handleMouseEnter = () => {
@@ -599,6 +617,7 @@ const ProductDetails = () => {
   const hasRatings = totalReviewCount > 0;
 
   const goToReviews = () => {
+    setIsRatingOverlayOpen(false);
     if (typeof document === "undefined") return;
     const el = document.getElementById("reviews");
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -649,6 +668,9 @@ const ProductDetails = () => {
                             src={img}
                             alt={`${product.title} ${index + 1}`}
                             className="img-fluid w-100"
+                            loading="lazy"
+                            width="1000"
+                            height="1000"
                             style={{
                               borderRadius: "8px",
                               objectFit: "contain",
@@ -677,6 +699,10 @@ const ProductDetails = () => {
                       src={images[selectedImage] || images[0]}
                       alt={product.title}
                       className="product-detail-main-image img-fluid w-100"
+                      loading="eager"
+                      fetchpriority="high"
+                      width="1000"
+                      height="1000"
                       style={{
                         borderRadius: "8px",
                         objectFit: "contain",
@@ -719,6 +745,9 @@ const ProductDetails = () => {
                             src={img}
                             alt={`${product.title} ${index + 1}`}
                             className={`product-detail-thumb img-thumbnail flex-shrink-0 ${selectedImage === index ? "border-primary" : ""}`}
+                            loading="lazy"
+                            width="80"
+                            height="80"
                             style={{
                               width: "80px",
                               height: "80px",
@@ -740,6 +769,7 @@ const ProductDetails = () => {
             <style>{`
                 .product-images-col {
                   min-width: 0;
+                  margin-top : 10px;
                 }
                 .product-images {
                   display: flex;
@@ -814,7 +844,7 @@ const ProductDetails = () => {
                 }
                 .product-detail-swiper .swiper-button-next,
                 .product-detail-swiper .swiper-button-prev {
-                  color: var(--primary-color, #89bb56);
+                  color: var(--primary-color, #547535);
                   background: rgba(255, 255, 255, 0.9);
                   width: 40px;
                   height: 40px;
@@ -827,7 +857,7 @@ const ProductDetails = () => {
                   font-weight: bold;
                 }
                 .product-detail-swiper .swiper-pagination-bullet {
-                  background: var(--primary-color, #89bb56);
+                  background: var(--primary-color, #547535);
                   opacity: 0.5;
                   width: 8px;
                   height: 8px;
@@ -849,6 +879,30 @@ const ProductDetails = () => {
                   .product-detail-main-image {
                     max-height: 500px;
                   }
+                  .product-detail-page {
+                    padding-bottom: 100px;
+                  }
+                  .product-mobile-sticky-actions {
+                    position: fixed;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    z-index: 1040;
+                    display: grid !important;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 0.5rem !important;
+                    padding: 0.6rem 0.75rem calc(0.6rem + env(safe-area-inset-bottom, 0px));
+                    margin: 0 !important;
+                    background: #ffffff;
+                    border-top: 1px solid #e9ecef;
+                    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+                  }
+                  .product-mobile-sticky-actions .btn {
+                    width: 100% !important;
+                    min-height: 44px;
+                    margin: 0 !important;
+                    font-size: 0.95rem;
+                  }
                 }
               `}</style>
           </div>
@@ -856,7 +910,7 @@ const ProductDetails = () => {
           <div className="col-md-6 product-details-col">
             <div className="product-details-scroll-wrap" ref={scrollWrapRef}>
               <h1
-                className="h2 h-md-3 text-uppercase mb-3 fw-bold product-detail-title"
+                className="h-md-3 text-uppercase mb-3 fw-bold product-detail-title"
                 style={{ fontSize: "clamp(1.1rem, 3.5vw + 0.5rem, 1.5rem)" }}
               >
                 {product.title}
@@ -864,6 +918,7 @@ const ProductDetails = () => {
 
               {hasRatings && (
                 <div
+                  ref={ratingOverlayWrapRef}
                   className={`product-detail-rating-hover-wrap${
                     isRatingOverlayOpen ? " is-open" : ""
                   }`}
@@ -903,6 +958,9 @@ const ProductDetails = () => {
                           e.preventDefault();
                           e.stopPropagation();
                           setIsRatingOverlayOpen(false);
+                          if (document.activeElement && typeof document.activeElement.blur === "function") {
+                            document.activeElement.blur();
+                          }
                         }}
                       >
                         X
@@ -985,16 +1043,16 @@ const ProductDetails = () => {
                 </div>
                 {originalPrice && (
                   <div className="product-detail-price-line product-detail-price-mrp">
-                    <span className="text-muted" style={{ fontSize: "clamp(0.6rem, 2.5vw, 0.8rem)" }}>
-                      M.R.P: <span className="text-decoration-line-through">{formatPrice(originalPrice)}</span>
+                    <span style={{ fontSize: "clamp(0.6rem, 2.5vw, 0.8rem)", color: "#495057" }}>
+                      M.R.P: <span className="text-decoration-line-through" style={{ color: "#212529" }}>{formatPrice(originalPrice)}</span>
                     </span>
                   </div>
                 )}
-                <p className="product-detail-price-tax text-muted small mb-0">
+                <p className="product-detail-price-tax text-muted small mb-0 font-10">
                   Inclusive of all taxes
                 </p>
 
-                <p className="product-detail-emi-text text-muted mb-0 mt-1">
+                <p className="product-detail-emi-text text-muted small mb-0 mt-1 font-10">
                   EMI options available during payment checkout
                 </p>
               </div>
@@ -1002,9 +1060,9 @@ const ProductDetails = () => {
               {/* Display Case Details for Mobile Cases */}
               {product.caseDetails && (
                 <div className="case-details mb-4">
-                  <h5 className="mb-2 fw-semibold" style={{ fontSize: "1.1rem" }}>
+                  <h2 className="mb-2 fw-semibold" style={{ fontSize: "1.1rem" }}>
                     PRODUCT SPECIFICATIONS:
-                  </h5>
+                  </h2>
                   <div className="card">
                     <div className="card-body">
                       <table className="table table-sm">
@@ -1068,7 +1126,7 @@ const ProductDetails = () => {
 
 
               <div className="quantity-section mb-4">
-                <label className="form-label">Quantity:</label>
+                <label htmlFor="product-quantity-input" className="form-label">Quantity:</label>
                 <div className="d-flex align-items-center">
                   <button
                     className="btn btn-outline-secondary"
@@ -1078,6 +1136,7 @@ const ProductDetails = () => {
                     -
                   </button>
                   <input
+                    id="product-quantity-input"
                     type="number"
                     className="form-control text-center mx-2"
                     style={{ width: "80px" }}
@@ -1140,7 +1199,7 @@ const ProductDetails = () => {
                 </ul>
               </div>
 
-              <div className="action-buttons d-flex flex-column gap-3">
+              <div className="action-buttons d-flex flex-column gap-3 product-mobile-sticky-actions">
                 <button
                   className="btn btn-lg w-100 btn-primary btn-add-to-cart btn-add-to-cart-product-detail"
                   onClick={handleAddToCart}
@@ -1251,11 +1310,14 @@ const ProductDetails = () => {
           <ProductDetailsTrustStrip />
         </div> */}
 
+        {/* Featured seller reviews (curated) — before customer reviews */}
+        <ProductSellerReviews productId={numericProductId} productTitle={product?.title} />
+
         {/* Customer Reviews Section - below product details */}
         <div id="reviews" className="row mt-4 mt-md-5 customer-reviews-section">
           <div className="col-12">
             <h3 className="mb-3 mb-md-4 fw-bold" style={{ fontSize: "clamp(1.25rem, 3vw, 1.5rem)" }}>
-              Customer reviews
+              RATINGS
             </h3>
 
             {/* Star rating breakdown - all percentages, no expand */}
@@ -1290,7 +1352,7 @@ const ProductDetails = () => {
               </div>
             ) : reviews.length > 0 ? (
               <div className="row customer-reviews-grid row-cols-1 row-cols-lg-4 g-3">
-                {reviews.map((r) => (
+                {/* {reviews.map((r) => (
                   <div key={r.id} className="col">
                     <div className="list-group-item list-group-item-action p-3 p-md-4 review-list-item h-100">
                       <div className="d-flex flex-column gap-2">
@@ -1321,29 +1383,36 @@ const ProductDetails = () => {
                       </div>
                     </div>
                   </div>
-                ))}
+                ))} */}
               </div>
-            ) : totalReviewCount > 0 ? (
-              <p className="text-muted" style={{ fontSize: "clamp(0.85rem, 1.8vw, 0.95rem)" }}>
-                Rating summary is shown above. Written reviews from customers will appear here when
-                submitted.
-              </p>
+            ) : 
+            totalReviewCount > 0 ? (
+              <div
+                className="text-muted"
+                style={{ fontSize: "clamp(0.85rem, 1.8vw, 0.95rem)" }}
+              >
+                <hr className="mb-0" />
+              </div>
             ) : (
-              <p className="text-muted" style={{ fontSize: "clamp(0.85rem, 1.8vw, 0.95rem)" }}>
-                No reviews yet for this product.
-              </p>
-            )}
+              <div
+                className="text-muted"
+                style={{ fontSize: "clamp(0.85rem, 1.8vw, 0.95rem)" }}
+              >
+                <hr className="mb-0" />
+              </div>
+            )
+            }
           </div>
         </div>
 
         {/* Customer review write form */}
         {!isLoggedIn ? (
           <div ref={reviewFormRef} className="mt-4 mt-md-5 review-write-section">
-            <h4 className="mb-3 fw-bold" style={{ fontSize: "clamp(1.05rem, 2.5vw, 1.25rem)" }}>
+            {/* <h4 className="mb-3 fw-bold" style={{ fontSize: "clamp(1.05rem, 2.5vw, 1.25rem)" }}>
               Write a review
-            </h4>
+            </h4> */}
 
-            <div className="alert alert-warning mb-0">
+            {/* <div className="alert alert-warning mb-0">
               Please login to write a review.
               <div className="mt-2">
                 <button
@@ -1354,13 +1423,13 @@ const ProductDetails = () => {
                   Login
                 </button>
               </div>
-            </div>
+            </div> */}
           </div>
         ) : canReviewProduct || myReview ? (
           <div ref={reviewFormRef} className="mt-4 mt-md-5 review-write-section">
-            <h4 className="mb-3 fw-bold" style={{ fontSize: "clamp(1.05rem, 2.5vw, 1.25rem)" }}>
+            {/* <h4 className="mb-3 fw-bold" style={{ fontSize: "clamp(1.05rem, 2.5vw, 1.25rem)" }}>
               Write a review
-            </h4>
+            </h4> */}
 
             {loadingEligibility ? (
               <div className="text-center py-3">
@@ -1369,9 +1438,9 @@ const ProductDetails = () => {
                 </div>
               </div>
             ) : myReview ? (
-              <div className="alert alert-success mb-0">
+              <div className="alert alert-success mb-0 text-dark">
                 <div className="fw-semibold">Thanks for your review!</div>
-                <div className="text-muted small mt-1">
+                <div className="small mt-1" style={{ color: "#1f2937" }}>
                   {myReview.rating} / 5 stars
                 </div>
                 {myReview.reviewText ? (

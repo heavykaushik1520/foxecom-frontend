@@ -88,7 +88,7 @@ const DealOfTheWeek = () => {
     <section className="deal-of-the-week mt-5" style={{ backgroundColor: '#f8f9fa' }}>
       <div className="container">
         <div className="row">
-          <div className="display-header d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+          <div className="display-header d-flex justify-content-between align-items-center mb-0 pb-3 border-bottom">
             <div>
               <h2 className="display-7 text-center text-dark text-uppercase mb-0">
                 {deal.title || 'Deal of the Week'}
@@ -101,20 +101,20 @@ const DealOfTheWeek = () => {
               to="/deal-of-the-week" 
               className="btn text-uppercase"
               style={{
-                borderColor: '#89bb56',
-                color: '#89bb56',
+                borderColor: '#547535',
+                color: '#547535',
                 backgroundColor: 'transparent',
                 transition: 'all 0.3s ease'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#89bb56';
+                e.currentTarget.style.backgroundColor = '#547535';
                 e.currentTarget.style.color = '#fff';
-                e.currentTarget.style.borderColor = '#89bb56';
+                e.currentTarget.style.borderColor = '#547535';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = '#89bb56';
-                e.currentTarget.style.borderColor = '#89bb56';
+                e.currentTarget.style.color = '#547535';
+                e.currentTarget.style.borderColor = '#547535';
               }}
             >
               View Deal

@@ -81,9 +81,9 @@ const ResetPassword = () => {
           <div className="card shadow border-0">
             <div className="card-body p-4">
               <div className="text-center mb-4">
-                <h4 className="fw-bold mb-1" style={{ fontSize: "1.5rem" }}>
+                <h1 className="h4 fw-bold mb-1" style={{ fontSize: "1.5rem" }}>
                   Reset Password
-                </h4>
+                </h1>
                 <p className="text-muted mb-0" style={{ fontSize: "0.95rem" }}>
                   Enter your new password below.
                 </p>

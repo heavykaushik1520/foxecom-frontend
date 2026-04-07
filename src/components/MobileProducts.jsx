@@ -14,9 +14,18 @@ const MobileProducts = () => {
   const [products, setProducts] = useState([])
   const [ratingsMap, setRatingsMap] = useState({})
   const [loading, setLoading] = useState(true)
+  const [isMobileView, setIsMobileView] = useState(
+    typeof window !== 'undefined' ? window.innerWidth < 576 : false
+  )
 
   useEffect(() => {
     loadProducts()
+  }, [])
+
+  useEffect(() => {
+    const handleResize = () => setIsMobileView(window.innerWidth < 576)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
   }, [])
 
   useEffect(() => {
@@ -93,30 +102,30 @@ const MobileProducts = () => {
   }
 
   return (
-    <section id="mobile-products" className="product-store position-relative padding-large">
+    <section id="mobile-products" className="product-store position-relative padding-large mt-1">
       <div className="container">
         <div className="row">
-          <div className="display-header d-flex justify-content-between pb-3">
+          <div className="display-header d-flex justify-content-between pb-0">
             <h2 className="display-7 text-dark text-uppercase">Mobile Products</h2>
             <div className="btn-right">
               <Link 
                 to="/shop" 
                 className="btn text-uppercase"
                 style={{
-                  borderColor: '#89bb56',
-                  color: '#89bb56',
+                  borderColor: '#547535',
+                  color: '#547535',
                   backgroundColor: 'transparent',
                   transition: 'all 0.3s ease'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#89bb56';
+                  e.currentTarget.style.backgroundColor = '#547535';
                   e.currentTarget.style.color = '#fff';
-                  e.currentTarget.style.borderColor = '#89bb56';
+                  e.currentTarget.style.borderColor = '#547535';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.backgroundColor = 'transparent';
-                  e.currentTarget.style.color = '#89bb56';
-                  e.currentTarget.style.borderColor = '#89bb56';
+                  e.currentTarget.style.color = '#547535';
+                  e.currentTarget.style.borderColor = '#547535';
                 }}
               >
                  Shop
@@ -124,7 +133,7 @@ const MobileProducts = () => {
             </div>
           </div>
           {loading ? (
-            <div className="row g-4">
+            <div className="row g-4 ">
               {[...Array(4)].map((_, i) => (
                 <div key={i} className="col-6 col-md-4 col-lg-3">
                   <div className="card product-card h-100">
@@ -140,6 +149,36 @@ const MobileProducts = () => {
           ) : products.length === 0 ? (
             <div className="col-12 text-center py-5">
               <p className="text-muted">No mobile products available at the moment.</p>
+            </div>
+          ) : isMobileView ? (
+            <div className="row g-3 mt-0">
+              {products.map((product) => {
+                const productData = {
+                  id: product.id,
+                  title: product.title || product.name,
+                  price: parseFloat(product.price || 0),
+                  discountPrice: product.discountPrice ? parseFloat(product.discountPrice) : null,
+                  thumbnailImage: product.thumbnailImage,
+                  images: product.images,
+                  rating: ratingsMap[product.id]?.averageRating ?? product.rating ?? product.averageRating ?? 0,
+                  reviewCount: ratingsMap[product.id]?.reviewCount ?? product.reviewCount ?? product.reviewsCount ?? 0,
+                  fiveStarCount: ratingsMap[product.id]?.fiveStarCount ?? product?.ratingSummary?.count5 ?? product?.count5 ?? 0,
+                  inStock: product.inStock !== false,
+                  category: product.category,
+                  sku: product.sku ?? '',
+                };
+
+                return (
+                  <div key={product.id} className="col-6">
+                    <ProductCard
+                      product={productData}
+                      onAddToCart={handleAddToCart}
+                      showAddToCart={true}
+                      showBuyNow={false}
+                    />
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <Swiper

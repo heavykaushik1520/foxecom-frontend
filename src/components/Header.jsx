@@ -218,18 +218,31 @@ const Header = ({ isLoggedIn: isLoggedInProp, setIsLoggedIn: setIsLoggedInProp }
               to="/"
               onClick={closeNavbar}
             >
-              <img src={logoImg} alt="FOXECOM" className="header-logo" />
+              <img
+                src={logoImg}
+                alt="FOXECOM"
+                className="header-logo"
+                width="180"
+                height="52"
+                loading="eager"
+                fetchpriority="high"
+              />
             </Link>
             {/* Desktop: search, cart, account inside collapse */}
             <div className="collapse navbar-collapse order-last" id="mainNavbar" ref={collapseRef}>
               <ul className="navbar-nav ms-auto align-items-lg-center gap-2 gap-lg-3 d-none d-lg-flex">
                 <li className="nav-item">
-                  <Link className="nav-link d-flex align-items-center" to="/shop" onClick={closeNavbar}>
+                  <Link
+                    className="nav-link d-flex align-items-center"
+                    to="/shop"
+                    onClick={closeNavbar}
+                    aria-label="Search products"
+                  >
                     <i className="bi bi-search fs-5" />
                   </Link>
                 </li>
                 <li className="nav-item">
-                  <Link className="nav-link d-flex align-items-center" to="/cart" onClick={closeNavbar}>
+                  <Link className="nav-link d-flex align-items-center" to="/cart" onClick={closeNavbar} aria-label="View Shopping Cart">
                     <i className="bi bi-bag fs-5" />
                     {cartCount > 0 && <span className="ms-1 badge bg-dark rounded-pill">{cartCount}</span>}
                   </Link>
@@ -242,7 +255,7 @@ const Header = ({ isLoggedIn: isLoggedInProp, setIsLoggedIn: setIsLoggedInProp }
                   </li>
                 ) : (
                   <li className="nav-item dropdown">
-                    <button className="btn btn-link nav-link p-0 dropdown-toggle text-dark text-decoration-none" data-bs-toggle="dropdown" aria-expanded="false">
+                    <button type="button" className="btn btn-link nav-link p-0 dropdown-toggle text-dark text-decoration-none" data-bs-toggle="dropdown" aria-expanded="false" aria-label="User Menu">
                       <i className="bi bi-person fs-5" />
                     </button>
                     <ul className="dropdown-menu dropdown-menu-end">
@@ -260,7 +273,14 @@ const Header = ({ isLoggedIn: isLoggedInProp, setIsLoggedIn: setIsLoggedInProp }
               {/* Mobile sidebar: logo + close, Home, brands with expandable models (no search) */}
               <div className="mobile-sidebar-panel d-lg-none">
                 <div className="mobile-sidebar-header d-flex align-items-center justify-content-between py-3 px-3 border-bottom">
-                  <img src={logoImg} alt="FOXECOM" className="header-logo header-logo-mobile" />
+                  <img
+                    src={logoImg}
+                    alt="FOXECOM"
+                    className="header-logo header-logo-mobile"
+                    width="130"
+                    height="38"
+                    loading="eager"
+                  />
                   <button
                     type="button"
                     className="btn btn-link p-0 text-dark text-decoration-none"
@@ -321,17 +341,22 @@ const Header = ({ isLoggedIn: isLoggedInProp, setIsLoggedIn: setIsLoggedInProp }
 
             {/* Mobile only: cart (and account) on the right, outside sidebar */}
             <div className="d-flex align-items-center gap-2 d-lg-none order-last ms-2">
-              <Link className="nav-link p-0 d-flex align-items-center" to="/cart" onClick={closeNavbar}>
+              <Link className="nav-link p-0 d-flex align-items-center" to="/cart" onClick={closeNavbar} aria-label="View Shopping Cart">
                 <i className="bi bi-bag fs-5 text-dark" />
                 {cartCount > 0 && <span className="ms-1 badge bg-dark rounded-pill">{cartCount}</span>}
               </Link>
               {!isLoggedIn ? (
-                <Link className="nav-link p-0" to="/login" onClick={closeNavbar}>
+                <Link
+                  className="nav-link p-0"
+                  to="/login"
+                  onClick={closeNavbar}
+                  aria-label="Sign in"
+                >
                   <i className="bi bi-person fs-5 text-dark" />
                 </Link>
               ) : (
                 <div className="dropdown">
-                  <button className="btn btn-link p-0 text-dark" data-bs-toggle="dropdown" aria-expanded="false">
+                  <button type="button" className="btn btn-link p-0 text-dark" data-bs-toggle="dropdown" aria-expanded="false" aria-label="User Menu">
                     <i className="bi bi-person fs-5" />
                   </button>
                   <ul className="dropdown-menu dropdown-menu-end">

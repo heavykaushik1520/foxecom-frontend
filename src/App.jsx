@@ -17,6 +17,7 @@ import Layout from "./admin/Layout";
 // Lazy load user pages for code splitting
 const Home = lazy(() => import("./pages/Home"));
 const Shop = lazy(() => import("./pages/Shop"));
+const CategoryPage = lazy(() => import("./pages/CategoryPage"));
 const ProductDetails = lazy(() => import("./pages/ProductDetails"));
 const Cart = lazy(() => import("./pages/Cart"));
 const Checkout = lazy(() => import("./pages/Checkout"));
@@ -78,6 +79,10 @@ const FoxcomOriginalsDashboard = lazy(() => import("./admin/pages/foxcomOriginal
 const AddFoxcomOriginals = lazy(() => import("./admin/pages/foxcomOriginals/AddFoxcomOriginals"));
 const EditFoxcomOriginals = lazy(() => import("./admin/pages/foxcomOriginals/EditFoxcomOriginals"));
 const ProductReviews = lazy(() => import("./admin/pages/reviews/ProductReviews"));
+const SellerReviewsDashboard = lazy(() => import("./admin/pages/sellerReviews/SellerReviewsDashboard"));
+const SellerReviewsByProduct = lazy(() => import("./admin/pages/sellerReviews/SellerReviewsByProduct"));
+const AddSellerReview = lazy(() => import("./admin/pages/sellerReviews/AddSellerReview"));
+const EditSellerReview = lazy(() => import("./admin/pages/sellerReviews/EditSellerReview"));
 const SuperAdminProtectedRoute = lazy(() => import("./admin/SuperAdminProtectedRoute"));
 const SuperAdminLayout = lazy(() => import("./admin/SuperAdminLayout"));
 const SuperAdminDashboard = lazy(() => import("./admin/SuperAdminDashboard"));
@@ -148,6 +153,7 @@ function App() {
                 <Route path="/" element={<UserLayout />}>
                   <Route index element={<Home />} />
                   <Route path="shop" element={<Shop />} />
+                  <Route path="category/:slug" element={<CategoryPage />} />
                   <Route path="contact-us" element={<ContactUs />} />
                   <Route path="about-us" element={<AboutUs />} />
                   <Route path="privacy-policy" element={<PrivacyPolicy />} />
@@ -311,6 +317,10 @@ function App() {
                   <Route path="foxcom-originals/edit/:id" element={<EditFoxcomOriginals />} />
                   <Route path="reviews" element={<ProductReviews />} />
                   <Route path="reviews/:productId" element={<ProductReviews />} />
+                  <Route path="seller-reviews/add" element={<AddSellerReview />} />
+                  <Route path="seller-reviews/edit/:id" element={<EditSellerReview />} />
+                  <Route path="seller-reviews/product/:productId" element={<SellerReviewsByProduct />} />
+                  <Route path="seller-reviews" element={<SellerReviewsDashboard />} />
                 </Route>
 
 

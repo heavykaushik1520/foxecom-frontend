@@ -41,6 +41,7 @@ const ProductRatingExpandable = ({
   starSize = "0.95rem",
   productPage = false,
   showCount = true,
+  disableExpand = false,
 }) => {
   const [showModal, setShowModal] = useState(false);
   const [distribution, setDistribution] = useState(distributionProp || {});
@@ -93,24 +94,32 @@ const ProductRatingExpandable = ({
     <>
       <div className="product-rating-expandable-inline d-flex align-items-center gap-1 flex-wrap">
         <StarDisplay rating={averageRating} size={starSize} />
-        <button
-          type="button"
-          className="product-rating-expandable-trigger btn btn-link p-0 border-0 text-decoration-none small d-flex align-items-center"
-          style={{ color: "#000" }}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            openModal();
-          }}
-          aria-label="View rating breakdown"
-        >
-          {showCount && <span className="ms-1" style={{ color: "#000" }}>({countToDisplay})</span>}
-          <i
-            className="bi bi-chevron-down ms-0 ms-sm-1 product-rating-expandable-chevron"
+        {disableExpand ? (
+          showCount ? (
+            <span className="small ms-1 mobile-count-view" style={{ color: "#000" }}>
+              ({countToDisplay})
+            </span>
+          ) : null
+        ) : (
+          <button
+            type="button"
+            className="product-rating-expandable-trigger btn btn-link p-0 border-0 text-decoration-none small d-flex align-items-center"
             style={{ color: "#000" }}
-            aria-hidden
-          />
-        </button>
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              openModal();
+            }}
+            aria-label="View rating breakdown"
+          >
+            {showCount && <span className="ms-1 mobile-count-view" style={{ color: "#000" }}>({countToDisplay})</span>}
+            <i
+              className="bi bi-chevron-down ms-0 ms-sm-1 product-rating-expandable-chevron"
+              style={{ color: "#000" }}
+              aria-hidden
+            />
+          </button>
+        )}
       </div>
 
       <RatingBreakdownModal

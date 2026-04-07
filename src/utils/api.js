@@ -415,8 +415,15 @@ export const categoryAPI = {
     return data;
   },
   
-  getById: async (id) => {
-    const { data } = await apiRequest(`/categories/${id}`);
+  getById: async (id, options = {}) => {
+    const params = new URLSearchParams();
+    if (options.includeProducts === false) {
+      params.set('includeProducts', 'false');
+    }
+    const qs = params.toString();
+    const path = encodeURIComponent(String(id ?? ''));
+    const endpoint = `/categories/${path}${qs ? `?${qs}` : ''}`;
+    const { data } = await apiRequest(endpoint);
     return data;
   },
 };
@@ -570,6 +577,10 @@ export const checkoutAPI = {
 export const reviewAPI = {
   getByProduct: async (productId) => {
     const { data } = await apiRequest(`/products/${productId}/reviews`);
+    return data;
+  },
+  getSellerReviewsByProduct: async (productId) => {
+    const { data } = await apiRequest(`/products/${productId}/seller-reviews`);
     return data;
   },
   // Customer: create or update their review (requires auth token)
@@ -1082,6 +1093,63 @@ export const adminAPI = {
   },
   deleteProductReview: async (reviewId) => {
     await adminApiRequest(`/admin/reviews/${reviewId}`, { method: 'DELETE' });
+  },
+
+  // Seller reviews (admin-only; multipart for create/update)
+  getSellerReviewPerProductStats: async () => {
+    const { data } = await adminApiRequest('/admin/seller-reviews/stats/per-product');
+    return data?.stats ?? [];
+  },
+  getSellerReviews: async (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = `/admin/seller-reviews${queryString ? `?${queryString}` : ''}`;
+    const { data } = await adminApiRequest(endpoint);
+    return data;
+  },
+  getSellerReviewsByProduct: async (productId, params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = `/admin/seller-reviews/by-product/${productId}${queryString ? `?${queryString}` : ''}`;
+    const { data } = await adminApiRequest(endpoint);
+    return data;
+  },
+  getSellerReview: async (id) => {
+    const { data } = await adminApiRequest(`/admin/seller-reviews/${id}`);
+    return data?.sellerReview ?? data;
+  },
+  createSellerReview: async (formData) => {
+    const url = `${API_BASE_URL}/admin/seller-reviews`;
+    const token = getAdminToken();
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+    const refreshedToken = res.headers.get('x-auth-token');
+    if (refreshedToken) {
+      localStorage.setItem(STORAGE_KEYS.ADMIN_TOKEN, refreshedToken);
+    }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || 'Failed to create seller review');
+    return data;
+  },
+  updateSellerReview: async (id, formData) => {
+    const url = `${API_BASE_URL}/admin/seller-reviews/${id}`;
+    const token = getAdminToken();
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+    const refreshedToken = res.headers.get('x-auth-token');
+    if (refreshedToken) {
+      localStorage.setItem(STORAGE_KEYS.ADMIN_TOKEN, refreshedToken);
+    }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || 'Failed to update seller review');
+    return data;
+  },
+  deleteSellerReview: async (id) => {
+    await adminApiRequest(`/admin/seller-reviews/${id}`, { method: 'DELETE' });
   },
 
   getProductsByCategory: async (categoryId, params = {}) => {

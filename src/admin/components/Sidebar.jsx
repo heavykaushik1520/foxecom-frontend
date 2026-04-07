@@ -24,6 +24,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     { path: "/admin/deal-of-the-week", label: "Deal of the Week" },
     { path: "/admin/foxcom-originals", label: "FOXECOM Originals" },
     { path: "/admin/reviews", label: "Product Reviews" },
+    { path: "/admin/seller-reviews", label: "Seller Reviews" },
     { path: "/admin/orders", label: "Orders" },
     { path: "/admin/users", label: "Users" },
     { path: "/admin/admins", label: "Admins" },

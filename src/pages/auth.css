@@ -16,8 +16,8 @@
 }
 
 .auth-card .form-control:focus {
-  border-color: #89bb56;
-  box-shadow: 0 0 0 0.2rem rgba(137, 187, 86, 0.25);
+  border-color: #547535;
+  box-shadow: 0 0 0 0.2rem rgba(84, 117, 53, 0.25);
 }
 
 .auth-card .btn-primary:disabled {
@@ -52,7 +52,9 @@
   min-height: 2.375rem;
   border-radius: 8px;
   border: 1px solid #dee2e6;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 @media (min-width: 400px) {
@@ -147,7 +149,7 @@
 
 .auth-page .auth-btn-google {
   border: 1px solid #dee2e6;
-  color: #89bb56;
+  color: #547535;
   background-color: #fff;
   transition: background-color 0.2s ease;
 }
@@ -155,12 +157,12 @@
 .auth-page .auth-btn-google:hover:not(:disabled) {
   background-color: #f8f9fa;
   border-color: #dee2e6;
-  color: #89bb56;
+  color: #547535;
 }
 
 .auth-page .auth-btn-submit {
   border: none;
-  background-color: #89bb56;
+  background-color: #547535;
 }
 
 .auth-page .auth-btn-submit:hover:not(:disabled) {
@@ -187,6 +189,11 @@
 
 /* Card padding: tighter on narrow phones */
 @media (max-width: 575.98px) {
+  .auth-page {
+    padding-left: 0px !important;
+    padding-right: 0px !important;
+  }
+
   .auth-page .auth-card {
     border-radius: 8px;
   }
@@ -212,5 +219,136 @@
 @media (min-width: 992px) {
   .auth-card {
     max-width: 450px;
+  }
+}
+
+/* Sign-up page: match Login layout; on phones use full width and start content higher (less gap under header) */
+@media (max-width: 575.98px) {
+  .auth-page.auth-signup-page {
+    align-items: flex-start !important;
+    padding-top: 0.25rem !important;
+    padding-bottom: 1.5rem !important;
+  }
+
+  .auth-page.auth-signup-page .auth-title {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .auth-page.auth-signup-page .auth-subtitle {
+    font-weight: 500;
+    line-height: 1.45;
+  }
+
+  /* Wider card, more breathing room; inputs stay compact (see below) */
+  .auth-page.auth-signup-page .auth-signup-card {
+    max-width: none;
+  }
+
+  .auth-page.auth-signup-page .auth-signup-card-body {
+    padding: 1.5rem 1.35rem 0 !important;
+    min-height: 0;
+  }
+
+  /* Compact fields on sign-up mobile (do not scale up like default auth-input) */
+  .auth-page.auth-signup-page .auth-input {
+    font-size: 0.8125rem !important;
+    padding: 0.32rem 0.65rem !important;
+    min-height: 2.25rem !important;
+  }
+
+  .auth-page.auth-signup-page .auth-input-group .btn-toggle-password {
+    padding: 0.28rem 0.5rem !important;
+    min-width: 2.25rem !important;
+  }
+
+  .auth-page.auth-signup-page .auth-input-group .btn-toggle-password i {
+    font-size: 0.95rem !important;
+  }
+
+  .auth-page.auth-signup-page .auth-label {
+    font-size: 0.8125rem !important;
+    margin-bottom: 0.35rem !important;
+  }
+
+  .auth-page.auth-signup-page .btn.auth-btn-submit {
+    font-size: 0.8125rem !important;
+    padding: 0.42rem 0.9rem !important;
+  }
+
+  /* Footer strip: edge-to-edge with card body padding (1.35rem) */
+  .auth-page.auth-signup-page .auth-signup-footer {
+    margin-left: -1.35rem;
+    margin-right: -1.35rem;
+    margin-bottom: -1.35rem;
+    padding-left: 1.35rem;
+    padding-right: 1.35rem;
+  }
+}
+
+/* Sign-up: footer strip — muted line + readable link (no inline green) */
+.auth-page.auth-signup-page .auth-signup-footer {
+  margin-top: 1rem;
+  text-align: center;
+  padding-top: 0.9rem;
+  padding-bottom: 1.1rem;
+  border-top: 1px solid #e8eaed;
+  background: linear-gradient(180deg, #f6f7f8 0%, #fafbfc 100%);
+  border-radius: 0 0 10px 10px;
+}
+
+@media (min-width: 576px) {
+  .auth-page.auth-signup-page .auth-signup-footer {
+    margin-left: -1.5rem;
+    margin-right: -1.5rem;
+    margin-bottom: -1.5rem;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    border-radius: 0 0 12px 12px;
+  }
+}
+
+@media (min-width: 768px) {
+  .auth-page.auth-signup-page .auth-signup-footer {
+    margin-left: -3rem;
+    margin-right: -3rem;
+    margin-bottom: -3rem;
+    padding-left: 3rem;
+    padding-right: 3rem;
+    padding-bottom: 1.35rem;
+  }
+}
+
+.auth-page.auth-signup-page .auth-signup-footer-copy {
+  font-size: clamp(0.8125rem, 2.2vw, 0.9rem);
+  color: #5c636a;
+  line-height: 1.5;
+}
+
+.auth-page.auth-signup-page .auth-signup-footer-link {
+  color: #1a3a12;
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(84, 117, 53, 0.35);
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.auth-page.auth-signup-page .auth-signup-footer-link:hover,
+.auth-page.auth-signup-page .auth-signup-footer-link:focus-visible {
+  color: #547535;
+  border-bottom-color: #547535;
+}
+
+/* index.css forces p { font-size: 12px !important } on small screens; keep auth copy readable */
+@media (max-width: 768px) {
+  .auth-page .auth-subtitle,
+  .auth-page p.auth-footer-text,
+  .auth-page.auth-signup-page .auth-signup-footer-copy {
+    /* font-size: clamp(0.8125rem, 2.2vw, 0.9rem) !important; */
+    font-size: 12px !important;
+
+    line-height: 2.45;
   }
 }

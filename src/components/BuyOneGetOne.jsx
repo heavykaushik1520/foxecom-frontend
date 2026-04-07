@@ -89,7 +89,7 @@ const BuyOneGetOne = () => {
     <section className="bogo-section mt-5" style={{ backgroundColor: '#fff5f5' }}>
       <div className="container">
         <div className="row">
-          <div className="display-header d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+          <div className="display-header d-flex justify-content-between align-items-center mb-0 pb-3 border-bottom">
             <div>
               <h2 className="display-7 text-center text-dark text-uppercase mb-0">
                 {deal.title || 'Buy One Get One'}

@@ -1,50 +1,57 @@
-import React, { useRef, useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
-import { Swiper, SwiperSlide } from 'swiper/react'
-import { Autoplay, Pagination } from 'swiper/modules'
-import 'swiper/css'
-import 'swiper/css/pagination'
-import { bannersAPI, getImageUrl } from '../utils/api'
+import React, { useRef, useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Autoplay, Pagination } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/pagination";
+import { bannersAPI, getImageUrl } from "../utils/api";
 
 const Billboard = () => {
-  const swiperRef = useRef(null)
-  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth < 768)
-  const [banners, setBanners] = useState([])
-  const [loading, setLoading] = useState(true)
+  const swiperRef = useRef(null);
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" && window.innerWidth < 768,
+  );
+  const [banners, setBanners] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadBanners = async () => {
       try {
-        const list = await bannersAPI.getAll()
-        setBanners(Array.isArray(list) ? list : [])
+        const list = await bannersAPI.getAll();
+        setBanners(Array.isArray(list) ? list : []);
       } catch (err) {
-        console.error('Failed to load billboard banners:', err)
-        setBanners([])
+        console.error("Failed to load billboard banners:", err);
+        setBanners([]);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
-    loadBanners()
-  }, [])
+    };
+    loadBanners();
+  }, []);
 
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768)
-    }
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   // Per-banner: use mobile or desktop image based on viewport
   const BANNERS = banners.map((b) => ({
     src: getImageUrl(isMobile ? b.mobileImageUrl : b.desktopImageUrl),
-    alt: 'Billboard banner',
-  }))
+    alt: "Billboard banner",
+  }));
 
   // Skeleton loader while banners are fetching
   if (loading) {
     return (
-      <section id="billboard" className="billboard-section position-relative overflow-hidden" aria-busy="true" aria-label="Loading banners">
+      <section
+        id="billboard"
+        className="billboard-section position-relative overflow-hidden"
+        aria-busy="true"
+        aria-label="Loading banners"
+      >
         <div className="billboard-inner">
           <div className="billboard-skeleton-wrap">
             <div className="billboard-skeleton" />
@@ -56,6 +63,7 @@ const Billboard = () => {
             border-radius: 12px;
             overflow: hidden;
             background: #f0f0f0;
+            
           }
           .billboard-skeleton {
             width: 100%;
@@ -78,7 +86,9 @@ const Billboard = () => {
             .billboard-inner { max-width: 1500px; padding: 40px 36px; }
           }
           @media (max-width: 767px) {
-            .billboard-inner { padding: 0 16px; }
+            .billboard-inner { 
+            padding: 0 16px;
+             }
           }
           @keyframes billboard-skeleton-shimmer {
             0% { background-position: 200% 0; }
@@ -86,15 +96,18 @@ const Billboard = () => {
           }
         `}</style>
       </section>
-    )
+    );
   }
 
   if (BANNERS.length === 0) {
-    return null
+    return null;
   }
 
   return (
-    <section id="billboard" className="billboard-section position-relative overflow-hidden">
+    <section
+      id="billboard"
+      className="billboard-section position-relative overflow-hidden"
+    >
       <div className="billboard-inner">
         <Swiper
           ref={swiperRef}
@@ -108,8 +121,8 @@ const Billboard = () => {
           }}
           pagination={{
             clickable: true,
-            bulletClass: 'billboard-pagination-bullet',
-            bulletActiveClass: 'billboard-pagination-bullet-active',
+            bulletClass: "billboard-pagination-bullet",
+            bulletActiveClass: "billboard-pagination-bullet-active",
           }}
           grabCursor
           threshold={5}
@@ -124,8 +137,11 @@ const Billboard = () => {
                     src={banner.src}
                     alt={banner.alt}
                     className="billboard-slide-img"
-                    loading={index === 0 ? 'eager' : 'lazy'}
+                    loading={index === 0 ? "eager" : "lazy"}
+                    fetchpriority={index === 0 ? "high" : "auto"}
                     decoding="async"
+                    width={isMobile ? 531 : 1521}
+                    height={isMobile ? 316 : 516}
                   />
                 </div>
               </Link>
@@ -194,6 +210,7 @@ const Billboard = () => {
         @media (max-width: 767px) {
           .billboard-inner {
             padding: 0 16px;
+            margin-top:1rem;
           }
           .billboard-slide-img-wrap {
             aspect-ratio: 531 / 316;
@@ -226,6 +243,7 @@ const Billboard = () => {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            
           }
         }
         .billboard-arrow {
@@ -300,7 +318,7 @@ const Billboard = () => {
         }
       `}</style>
     </section>
-  )
-}
+  );
+};
 
-export default Billboard
+export default Billboard;

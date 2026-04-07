@@ -1,0 +1,99 @@
+# =========================================
+# FOXECOM - FINAL ROBOTS.TXT (ECOM + BLOG)
+# =========================================
+
+# -----------------------------------------
+# ALLOW ALL IMPORTANT CONTENT
+# -----------------------------------------
+User-agent: *
+Allow: /
+
+# -----------------------------------------
+# BLOCK LOW VALUE / PRIVATE PAGES
+# -----------------------------------------
+Disallow: /cart
+Disallow: /checkout
+Disallow: /order-confirmation
+Disallow: /thank-you
+Disallow: /account
+Disallow: /login
+Disallow: /register
+Disallow: /wishlist
+
+# -----------------------------------------
+# BLOCK SEARCH & FILTER (SEO CRITICAL)
+# -----------------------------------------
+Disallow: /search
+Disallow: /*?q=
+Disallow: /*?search=
+Disallow: /*?filter=
+Disallow: /*?sort=
+Disallow: /*?orderby=
+Disallow: /*?price=
+Disallow: /*?min_price=
+Disallow: /*?max_price=
+Disallow: /*?color=
+Disallow: /*?size=
+
+# -----------------------------------------
+# BLOCK TRACKING PARAMETERS
+# -----------------------------------------
+Disallow: /*?utm_source=
+Disallow: /*?utm_medium=
+Disallow: /*?utm_campaign=
+Disallow: /*?utm_term=
+Disallow: /*?utm_content=
+Disallow: /*?fbclid=
+Disallow: /*?gclid=
+
+# -----------------------------------------
+# ALLOW BLOG (VERY IMPORTANT)
+# -----------------------------------------
+Allow: /blog/
+Allow: /blog/*
+
+# -----------------------------------------
+# ALLOW ASSETS (RENDERING)
+# -----------------------------------------
+Allow: /*.js$
+Allow: /*.css$
+Allow: /assets/
+Allow: /static/
+Allow: /images/
+Allow: /uploads/
+
+# -----------------------------------------
+# GOOGLE BOTS (MERCHANT FIX)
+# -----------------------------------------
+User-agent: Googlebot
+Allow: /
+
+User-agent: Googlebot-Image
+Allow: /
+
+User-agent: AdsBot-Google
+Allow: /
+
+# -----------------------------------------
+# BLOCK BAD BOTS (OPTIONAL)
+# -----------------------------------------
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+# -----------------------------------------
+# SITEMAPS (IMPORTANT)
+# -----------------------------------------
+Sitemap: https://www.foxecom.in/sitemap.xml
+Sitemap: https://www.foxecom.in/product-sitemap.xml
+Sitemap: https://www.foxecom.in/category-sitemap.xml
+Sitemap: https://www.foxecom.in/blog-sitemap.xml
+
+# =========================================
+# END
+# =========================================

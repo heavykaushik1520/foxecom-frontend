@@ -14,7 +14,7 @@ const OrdersDashboard = () => {
   });
 
   const [filters, setFilters] = useState({
-    status: "paid",
+    status: "",
     search: "",
     startDate: "",
     endDate: "",
@@ -74,6 +74,40 @@ const OrdersDashboard = () => {
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
     setPagination(prev => ({ ...prev, page: 1 }));
+  };
+
+  const formatDateForInput = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const applyDatePreset = (preset) => {
+    const today = new Date();
+    const start = new Date(today);
+    const end = new Date(today);
+
+    if (preset === "day") {
+      // today only
+    } else if (preset === "week") {
+      const dayOfWeek = today.getDay(); // 0=Sunday
+      const daysSinceMonday = (dayOfWeek + 6) % 7;
+      start.setDate(today.getDate() - daysSinceMonday);
+    } else if (preset === "month") {
+      start.setDate(1);
+    } else if (preset === "year") {
+      start.setMonth(0, 1);
+    } else if (preset === "all") {
+      handleFilterChange("startDate", "");
+      handleFilterChange("endDate", "");
+      return;
+    } else {
+      return;
+    }
+
+    handleFilterChange("startDate", formatDateForInput(start));
+    handleFilterChange("endDate", formatDateForInput(end));
   };
 
   const applyFilters = async () => {
@@ -206,7 +240,7 @@ const OrdersDashboard = () => {
         <div className="card-body">
           <div className="row g-3">
             <div className="col-md-2">
-              <label className="form-label small fw-semibold">Status (default: Paid)</label>
+              <label className="form-label small fw-semibold">Status (default: All)</label>
               <select
                 className="form-select form-select-sm"
                 value={filters.status}
@@ -268,6 +302,41 @@ const OrdersDashboard = () => {
                 value={filters.maxAmount}
                 onChange={(e) => handleFilterChange('maxAmount', e.target.value)}
               />
+            </div>
+          </div>
+          <div className="row mt-2">
+            <div className="col-12 d-flex flex-wrap gap-2 align-items-center">
+              <span className="small fw-semibold text-muted">Quick Date:</span>
+              <button
+                className="btn btn-sm btn-outline-primary"
+                onClick={() => applyDatePreset("day")}
+              >
+                Day
+              </button>
+              <button
+                className="btn btn-sm btn-outline-primary"
+                onClick={() => applyDatePreset("week")}
+              >
+                Week
+              </button>
+              <button
+                className="btn btn-sm btn-outline-primary"
+                onClick={() => applyDatePreset("month")}
+              >
+                Month
+              </button>
+              <button
+                className="btn btn-sm btn-outline-primary"
+                onClick={() => applyDatePreset("year")}
+              >
+                Year
+              </button>
+              <button
+                className="btn btn-sm btn-outline-secondary"
+                onClick={() => applyDatePreset("all")}
+              >
+                All Time
+              </button>
             </div>
           </div>
           <div className="row mt-2">

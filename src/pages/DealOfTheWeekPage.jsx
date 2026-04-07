@@ -259,7 +259,7 @@ const DealOfTheWeekPage = () => {
     if (product) {
       const success = await addToCart(product, quantity);
       if (success) {
-        alert(`${product.title} added to cart!`);
+        // Success handled by CartContext toast
       }
     }
   };
@@ -294,7 +294,7 @@ const DealOfTheWeekPage = () => {
   };
 
   const formatPrice = (price) => {
-    return `Rs.${parseFloat(price).toFixed(2)}`;
+    return `₹${parseFloat(price).toFixed(2)}`;
   };
 
   const handleMouseEnter = () => {
@@ -411,6 +411,9 @@ const DealOfTheWeekPage = () => {
                             src={img}
                             alt={`${product.title} ${index + 1}`}
                             className="img-fluid w-100"
+                            loading="lazy"
+                            width="1000"
+                            height="1000"
                             style={{
                               borderRadius: "8px",
                               objectFit: "contain",
@@ -438,6 +441,10 @@ const DealOfTheWeekPage = () => {
                       src={images[selectedImage] || images[0]}
                       alt={product.title}
                       className="product-detail-main-image img-fluid w-100"
+                      loading="eager"
+                      fetchpriority="high"
+                      width="1000"
+                      height="1000"
                       style={{
                         borderRadius: "8px",
                         objectFit: "contain",
@@ -481,6 +488,9 @@ const DealOfTheWeekPage = () => {
                             className={`product-detail-thumb img-thumbnail flex-shrink-0 ${
                               selectedImage === index ? "border-primary" : ""
                             }`}
+                            loading="lazy"
+                            width="80"
+                            height="80"
                             style={{
                               width: "80px",
                               height: "80px",
@@ -576,7 +586,7 @@ const DealOfTheWeekPage = () => {
                 }
                 .product-detail-swiper .swiper-button-next,
                 .product-detail-swiper .swiper-button-prev {
-                  color: var(--primary-color, #89bb56);
+                  color: var(--primary-color, #547535);
                   background: rgba(255, 255, 255, 0.9);
                   width: 40px;
                   height: 40px;
@@ -589,7 +599,7 @@ const DealOfTheWeekPage = () => {
                   font-weight: bold;
                 }
                 .product-detail-swiper .swiper-pagination-bullet {
-                  background: var(--primary-color, #89bb56);
+                  background: var(--primary-color, #547535);
                   opacity: 0.5;
                 }
                 .product-detail-swiper .swiper-pagination-bullet-active {
@@ -660,19 +670,22 @@ const DealOfTheWeekPage = () => {
                     </span>
                   </div>
                 )}
-                <p className="product-detail-price-tax text-muted small mb-0">
+                <p
+                  className="product-detail-price-tax small mb-0"
+                  style={{ color: "#495057" }}
+                >
                   Inclusive of all taxes
                 </p>
               </div>
 
               {product.caseDetails && (
                 <div className="case-details mb-4">
-                  <h5
+                  <h2
                     className="mb-2 fw-semibold"
                     style={{ fontSize: "1.1rem" }}
                   >
                     PRODUCT SPECIFICATIONS:
-                  </h5>
+                  </h2>
                   <div className="card">
                     <div className="card-body">
                       <table className="table table-sm">
@@ -713,7 +726,7 @@ const DealOfTheWeekPage = () => {
               )}
 
               <div className="quantity-section mb-4">
-                <label className="form-label">Quantity:</label>
+                <label htmlFor="deal-quantity-input" className="form-label">Quantity:</label>
                 <div className="d-flex align-items-center">
                   <button
                     className="btn btn-outline-secondary"
@@ -723,6 +736,7 @@ const DealOfTheWeekPage = () => {
                     -
                   </button>
                   <input
+                    id="deal-quantity-input"
                     type="number"
                     className="form-control text-center mx-2"
                     style={{ width: "80px" }}
@@ -940,7 +954,10 @@ const DealOfTheWeekPage = () => {
                         style={{ width: `${percent}%` }}
                       />
                     </div>
-                    <span className="customer-reviews-percent text-muted small text-nowrap">
+                    <span
+                      className="customer-reviews-percent small text-nowrap"
+                      style={{ color: "#495057" }}
+                    >
                       {Math.round(percent)}%
                     </span>
                   </div>
@@ -976,7 +993,10 @@ const DealOfTheWeekPage = () => {
                               />
                             ))}
                           </div>
-                          <span className="text-muted review-customer-name fw-medium">
+                          <span
+                            className="review-customer-name fw-medium"
+                            style={{ color: "#495057" }}
+                          >
                             {maskDisplayName(r.reviewerName || "Customer")}
                           </span>
                         </div>

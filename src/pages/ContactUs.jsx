@@ -171,9 +171,9 @@ const ContactUs = () => {
               <div className="card-body p-3 p-md-4 p-lg-4">
                 {/* Header */}
                 <div className="text-center contact-header mb-3 mb-md-4">
-                  <h2 className="h3 fw-bold mb-3 contact-page-title">
+                  <h1 className="h3 fw-bold mb-3 contact-page-title">
                     CONTACT FOR B2B
-                  </h2>
+                  </h1>
                  
                 </div>
 

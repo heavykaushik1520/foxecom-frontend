@@ -15,7 +15,6 @@ const SmartWatches = () => {
   const handleAddToCart = (product, e) => {
     e.preventDefault()
     addToCart(product, 1)
-    alert(`${product.name} added to cart!`)
   }
 
   return (
@@ -53,7 +52,14 @@ const SmartWatches = () => {
                 <div className="product-card position-relative">
                   <Link to={`/product/${getProductPathSegment(watch)}`}>
                     <div className="image-holder">
-                      <img src={watch.image} alt="product-item" className="img-fluid" />
+                      <img
+                        src={watch.image}
+                        alt="product-item"
+                        className="img-fluid"
+                        loading="lazy"
+                        width="500"
+                        height="500"
+                      />
                     </div>
                   </Link>
                   <div className="cart-concern position-absolute">

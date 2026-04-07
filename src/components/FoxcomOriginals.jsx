@@ -107,7 +107,7 @@ const FoxcomOriginals = () => {
             position: relative;
             overflow: hidden;
             isolation: isolate;
-            --primary: #89bb56;
+            --primary: #547535;
             --primary2: #4e79ff;
             --primary3: #19d3c5;
             /* Must match src/styles/header.css main/.page-content padding-top */
@@ -192,10 +192,10 @@ const FoxcomOriginals = () => {
             pointer-events: none;
 
             background:
-              radial-gradient(circle at 15% 20%, rgba(137,187,86,0.55) 0%, rgba(137,187,86,0) 48%),
+              radial-gradient(circle at 15% 20%, rgba(84,117,53,0.55) 0%, rgba(84,117,53,0) 48%),
               radial-gradient(circle at 85% 10%, rgba(78,121,255,0.40) 0%, rgba(78,121,255,0) 52%),
               radial-gradient(circle at 55% 92%, rgba(25,211,197,0.38) 0%, rgba(25,211,197,0) 55%),
-              linear-gradient(135deg, rgba(137,187,86,0.22) 0%, rgba(78,121,255,0.18) 50%, rgba(25,211,197,0.16) 100%);
+              linear-gradient(135deg, rgba(84,117,53,0.22) 0%, rgba(78,121,255,0.18) 50%, rgba(25,211,197,0.16) 100%);
 
             background-size: 200% 200%;
             filter: blur(34px) saturate(140%);
@@ -493,7 +493,7 @@ const FoxcomOriginals = () => {
           position: relative;
           overflow: hidden;
           isolation: isolate;
-          --primary: #89bb56;
+          --primary: #547535;
           --primary2: #4e79ff;
           --primary3: #19d3c5;
           /* Must match src/styles/header.css main/.page-content padding-top */
@@ -578,10 +578,10 @@ const FoxcomOriginals = () => {
           pointer-events: none;
 
           background:
-            radial-gradient(circle at 15% 20%, rgba(137,187,86,0.55) 0%, rgba(137,187,86,0) 48%),
+            radial-gradient(circle at 15% 20%, rgba(84,117,53,0.55) 0%, rgba(84,117,53,0) 48%),
             radial-gradient(circle at 85% 10%, rgba(78,121,255,0.40) 0%, rgba(78,121,255,0) 52%),
             radial-gradient(circle at 55% 92%, rgba(25,211,197,0.38) 0%, rgba(25,211,197,0) 55%),
-            linear-gradient(135deg, rgba(137,187,86,0.22) 0%, rgba(78,121,255,0.18) 50%, rgba(25,211,197,0.16) 100%);
+            linear-gradient(135deg, rgba(84,117,53,0.22) 0%, rgba(78,121,255,0.18) 50%, rgba(25,211,197,0.16) 100%);
 
           background-size: 200% 200%;
           filter: blur(34px) saturate(140%);
@@ -879,6 +879,8 @@ const FoxcomOriginals = () => {
                               alt={product.title}
                               className="product-thumb-img"
                               loading="lazy"
+                              width="500"
+                              height="500"
                               onError={(e) => {
                                 e.currentTarget.src = getImageUrl("");
                               }}

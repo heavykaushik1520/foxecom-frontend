@@ -47,7 +47,7 @@ const Auth = () => {
 
   return (
     <>
-        <h2>Sign in page</h2>
+        <h1 className="h2">Sign in page</h1>
         <input
         type="email"
         placeholder="Email"

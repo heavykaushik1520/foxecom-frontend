@@ -22,6 +22,9 @@ function stripMarkdownLabel(text) {
 const Shop = () => {
   const { addToCart, buyNow } = useCart()
   const navigate = useNavigate()
+  const [isMobileView, setIsMobileView] = useState(
+    typeof window !== 'undefined' ? window.innerWidth < 576 : false
+  )
   const [searchParams, setSearchParams] = useSearchParams()
   const modelIdFromUrl = searchParams.get('modelId') || ''
   const categoryIdFromUrl = searchParams.get('categoryId') || ''
@@ -67,6 +70,12 @@ const Shop = () => {
   // Load categories on mount
   useEffect(() => {
     loadCategories()
+  }, [])
+
+  useEffect(() => {
+    const handleResize = () => setIsMobileView(window.innerWidth < 576)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
   }, [])
 
   // Load filter options when category changes
@@ -152,10 +161,11 @@ const Shop = () => {
                 {
                   averageRating: data.averageRating || 0,
                   reviewCount: data.totalCount ?? data.reviews?.length ?? 0,
+                  fiveStarCount: Number(data?.distribution?.[5] || data?.distribution?.['5']) || 0,
                 },
               ]
             } catch {
-              return [product.id, { averageRating: 0, reviewCount: 0 }]
+              return [product.id, { averageRating: 0, reviewCount: 0, fiveStarCount: 0 }]
             }
           })
         )
@@ -303,9 +313,7 @@ const Shop = () => {
   const handleAddToCart = async (product, e) => {
     e.preventDefault()
     const success = await addToCart(product, 1)
-    if (success) {
-      alert(`${product.title} added to cart!`)
-    }
+    // Success handled by CartContext toast
   }
 
   const handleBuyNow = async (product, e) => {
@@ -329,23 +337,30 @@ const Shop = () => {
     }
   }
 
-  const hasActiveFilters = Object.values(filters).some(val => val !== '' && val != null) || sortBy !== 'createdAt'
+  const hasActiveFilters =
+    Object.values(filters).some((val) => val !== '' && val != null) || sortBy !== 'createdAt'
+
+  // Mobile UX: show how many filters are currently active (excluding search text).
+  const activeFiltersCount = Object.entries(filters).filter(([key, val]) => {
+    if (key === 'search') return false
+    return val !== '' && val != null
+  }).length
 
   return (
-    <div className="padding-large">
+    <div className="padding-large shop-page">
       <div className="container">
         {/* Header */}
-        <div className="row mb-4">
+        <div className="row mb-0">
           <div className="col-12">
             <h1 className="text-uppercase mb-3 fw-bold" style={{ fontSize: 'clamp(1.5rem, 4vw, 2rem)' }}>Shop</h1>
           </div>
         </div>
 
         {/* Search Bar */}
-        <div className="row mb-4">
+        <div className="row mb-4 shop-mobile-search-row">
           <div className="col-12">
-            <div className="input-group">
-              <span className="input-group-text bg-light">
+            <div className="input-group shop-search-bar">
+              <span className="input-group-text bg-light shop-search-icon">
                 <i className="bi bi-search"></i>
               </span>
               <input
@@ -357,7 +372,7 @@ const Shop = () => {
               />
               {filters.search && (
                 <button
-                  className="btn btn-outline-secondary"
+                  className="btn btn-outline-secondary shop-search-clear"
                   onClick={() => handleFilterChange('search', '')}
                 >
                   <i className="bi bi-x"></i>
@@ -369,12 +384,17 @@ const Shop = () => {
 
         <div className="row">
           {/* Filters Sidebar */}
-          <div className="col-lg-3 col-md-4 mb-4">
-            <div className="card shadow-sm">
+          <div className="col-lg-3 col-md-4 mb-4 shop-filters-col">
+            <div className="card shadow-sm shop-filters-card">
               <div className="card-header bg-light d-flex justify-content-between align-items-center">
-                <h5 className="mb-0 fw-semibold" style={{ fontSize: '1.1rem' }}>
+                <h5 className="mb-0 fw-semibold shop-filters-title" style={{ fontSize: '1.1rem' }}>
                   <i className="bi bi-funnel me-2"></i>
                   Filters
+                  {activeFiltersCount > 0 && (
+                    <span className="shop-filters-active-badge ms-2">
+                      {activeFiltersCount}
+                    </span>
+                  )}
                 </h5>
                 <button
                   className="btn btn-sm btn-outline-secondary d-lg-none"
@@ -384,7 +404,7 @@ const Shop = () => {
                 </button>
               </div>
 
-              <div className={`card-body ${showFilters ? '' : 'd-none d-lg-block'}`}>
+              <div className={`card-body shop-filters-body ${showFilters ? '' : 'd-none d-lg-block'}`}>
                 {/* Clear Filters Button */}
                 {hasActiveFilters && (
                   <button
@@ -578,7 +598,7 @@ const Shop = () => {
               <div className="card-body">
                 <div className="row align-items-center">
                   <div className="col-md-6 mb-2 mb-md-0">
-                    <span className="text-muted" style={{ fontSize: '0.95rem' }}>
+                    {/* <span className="text-muted" style={{ fontSize: '0.95rem' }}>
                       {pagination.totalItems > 0 ? (
                         <>
                           Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.totalItems)} of {pagination.totalItems} products
@@ -587,7 +607,7 @@ const Shop = () => {
                       ) : (
                         'No products found'
                       )}
-                    </span>
+                    </span> */}
                   </div>
                   <div className="col-md-6">
                     <div className="d-flex align-items-center justify-content-md-end">
@@ -629,7 +649,7 @@ const Shop = () => {
 
             {/* Products Grid */}
             {!loading && products.length > 0 && (
-              <div className="row">
+              <div className="row g-3 shop-product-grid">
                 {products.map((product) => {
                   // console.log("product rating and review count", product.averageRating, product.reviewCount)
                   const imagePath = product.thumbnailImage || product.images?.[0]?.imageUrl
@@ -650,6 +670,7 @@ const Shop = () => {
                   const fiveStarCount = Math.max(
                     0,
                     parseInt(
+                      ratingsMap[product.id]?.fiveStarCount ??
                       product?.count5 ??
                         product?.fiveStarCount ??
                         product?.ratingSummary?.count5 ??
@@ -659,10 +680,10 @@ const Shop = () => {
                   )
 
                   return (
-                    <div key={product.id} className="col-lg-4 col-md-6 col-sm-6 mb-4">
+                    <div key={product.id} className="col-6 col-md-6 col-lg-4">
                       <div className="card h-100 shadow-sm product-card">
                         <Link to={`/product/${getProductPathSegment(product)}`} className="text-decoration-none">
-                          <div className="position-relative" style={{ height: '250px', overflow: 'hidden', backgroundColor: '#f8f9fa' }}>
+                          <div className="position-relative product-card-image-wrap" style={{ overflow: 'hidden', backgroundColor: '#f8f9fa' }}>
                             <img
                               src={imageUrl}
                               alt={product.title}
@@ -670,15 +691,14 @@ const Shop = () => {
                               style={{ objectFit: 'contain', padding: '10px' }}
                               loading="lazy"
                               decoding="async"
+                              width="500"
+                              height="500"
                               onError={(e) => {
                                 e.target.src = fallbackImage
                               }}
                             />
                             {hasDiscount && discountPercentage > 0 && (
-                              <span
-                                className="badge bg-danger position-absolute top-0 end-0 m-2"
-                                style={{ fontSize: '15px', fontWeight: 900 }}
-                              >
+                              <span className="badge bg-danger position-absolute top-0 end-0 m-2 product-card-discount-badge">
                                 -{discountPercentage}%
                               </span>
                             )}
@@ -692,77 +712,76 @@ const Shop = () => {
 
                         <div className="card-body d-flex flex-column">
                           <Link to={`/product/${getProductPathSegment(product)}`} className="text-decoration-none text-dark">
-                            <h5 className="card-title mb-2 fw-semibold product-card-title">{product.title}</h5>
+                            <h3 className="h5 card-title mb-2 fw-semibold product-card-title">{product.title}</h3>
                           </Link>
 
                           {/* Case Details */}
-                          {product.caseDetails && (
-                            <p className="text-muted small mb-2">
+                          {product.caseDetails && !isMobileView && (
+                            <p className="text-muted small mb-2 product-card-model-line">
                               <i className="bi bi-tag me-1"></i>
                               {product.caseDetails.brand?.name} {product.caseDetails.model?.name}
                             </p>
                           )}
 
-                          <div className="mt-auto">
+                          <div className="mt-auto product-card-rating-compact-md-mt">
                             {rating !== undefined &&
                               (rating > 0 || reviewCount > 0 || fiveStarCount > 0) && (
                                 <div className="mb-2 product-card-rating-compact">
                                   <ProductRatingExpandable
                                     averageRating={rating}
                                     totalCount={reviewCount || 0}
-                                    displayCount={reviewCount || 0}
+                                    displayCount={fiveStarCount || 0}
                                     productId={product.id}
                                     productLinkSegment={getProductPathSegment(product)}
-                                    starSize="0.85rem"
+                                    starSize="0.86rem"
                                     showCount
+                                    disableExpand={isMobileView}
                                   />
                                 </div>
                               )}
                             <div className="d-flex justify-content-between align-items-center mb-0">
                               <div>
                                 {hasDiscount ? (
-                                  <div className="d-flex align-items-baseline gap-2">
+                                  <div className="d-flex align-items-baseline gap-2 product-card-price-row">
                                     <span
-                                      className="h5"
+                                      className="h5 product-card-discount-inline"
                                       style={{
                                         fontWeight: 900,
                                         lineHeight: 1,
                                         color: '#dc3545',
-                                        fontSize: '15px',
                                       }}
                                     >
                                       -{discountPercentage}%
                                     </span>
                                     <span
-                                      className="h5 mb-0"
-                                      style={{ fontWeight: 400, color: '#000', fontSize: '15px' }}
+                                      className="h5 mb-0 product-card-main-price"
+                                      style={{ fontWeight: 600, color: '#000' }}
                                     >
-                                      Rs.{finalPrice.toFixed(2)}
+                                      ₹{finalPrice.toFixed(2)}
                                     </span>
                                     <span
-                                      className="small"
-                                      style={{ fontWeight: 300, color: '#000', fontSize: '15px' }}
+                                      className="small product-card-mrp"
+                                      style={{ fontWeight: 300, color: '#000' }}
                                     >
-                                      M.R.P:{' '}
                                       <span
-                                        className="text-decoration-line-through"
-                                        style={{ color: '#000', fontSize: '15px' }}
+                                        className="text-decoration-line-through product-card-mrp-value"
+                                        style={{ color: '#000' }}
                                       >
-                                        {originalPrice.toFixed(2)}
+                                        ₹{originalPrice.toFixed(2)}
                                       </span>
                                     </span>
                                   </div>
                                 ) : (
                                   <span
-                                    className="h5 mb-0"
-                                    style={{ color: '#000', fontSize: '15px' }}
+                                    className="h5 mb-0 product-card-main-price"
+                                    style={{ color: '#000' }}
                                   >
-                                    Rs.{finalPrice.toFixed(2)}
+                                    ₹{finalPrice.toFixed(2)}
                                   </span>
                                 )}
                               </div>
                             </div>
-                            <p className="text-muted mt-0 mb-0" style={{ fontSize: '12px' }}>
+                            <p className="text-muted mt-0 mb-0 product-card-shipping">
                               FREE SHIPPING
                             </p>
 
@@ -774,7 +793,7 @@ const Shop = () => {
                               >
                                 {inStock ? 'Add to Cart' : 'Out of Stock'}
                               </button>
-                              {inStock && (
+                              {inStock && !isMobileView && (
                                 <button
                                   className="btn btn-primary w-100 btn-buy-now"
                                   onClick={(e) => handleBuyNow(product, e)}

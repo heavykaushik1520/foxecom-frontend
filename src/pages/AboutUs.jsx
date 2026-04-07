@@ -8,7 +8,7 @@ const AboutUs = () => {
           <div className="col-lg-8 col-md-10">
             <div className="card border-0">
               <div className="card-body p-4 m-5">
-                <h3 className="fw-bold mb-3 text-center">About Us</h3>
+                <h1 className="h3 fw-bold mb-3 text-center">About Us</h1>
                 <p className="text-muted text-center mb-3 mt-3"></p>
                 Mobile accessories and electronics related products are
                 potentially hazardous, inflammable and require responsible usage

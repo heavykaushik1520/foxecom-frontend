@@ -7,13 +7,23 @@ const MyOrders = () => {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [cancellingOrderId, setCancellingOrderId] = useState(null)
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
     totalPages: 1,
     total: 0,
   })
-  const [statusFilter, setStatusFilter] = useState('paid')
+  const [statusFilter, setStatusFilter] = useState('')
+  const orderStatusOptions = [
+    { label: 'All Status', value: '' },
+    { label: 'Pending', value: 'pending' },
+    { label: 'Paid', value: 'paid' },
+    { label: 'Processing', value: 'processing' },
+    { label: 'Shipped', value: 'shipped' },
+    { label: 'Delivered', value: 'delivered' },
+    { label: 'Cancelled', value: 'cancelled' },
+  ]
 
   useEffect(() => {
     // Check if user is logged in
@@ -33,8 +43,9 @@ const MyOrders = () => {
         page: pagination.page,
         limit: pagination.limit,
       }
-      // Always request only paid orders by default
-      params.status = statusFilter || 'paid'
+      if (statusFilter) {
+        params.status = statusFilter
+      }
       const data = await orderAPI.getAll(params)
       setOrders(data.orders || [])
       setPagination((prev) => ({
@@ -54,6 +65,15 @@ const MyOrders = () => {
     }
   }
 
+  const handleStatusFilterChange = (event) => {
+    const nextStatus = event.target.value
+    setStatusFilter(nextStatus)
+    setPagination((prev) => ({
+      ...prev,
+      page: 1,
+    }))
+  }
+
   const getStatusBadge = (status) => {
     const statusColors = {
       pending: 'warning',
@@ -64,6 +84,18 @@ const MyOrders = () => {
       cancelled: 'danger',
     }
     return statusColors[status] || 'secondary'
+  }
+
+  const getStatusTextClass = (status) => {
+    const textColors = {
+      pending: 'text-dark',
+      processing: 'text-dark',
+      paid: 'text-white',
+      shipped: 'text-white',
+      delivered: 'text-white',
+      cancelled: 'text-white',
+    }
+    return textColors[status] || 'text-white'
   }
 
   const formatDate = (dateString) => {
@@ -81,17 +113,21 @@ const MyOrders = () => {
   }
 
   const handleCancelOrder = async (orderId) => {
+    if (cancellingOrderId === orderId) return
     if (!window.confirm('Are you sure you want to cancel this order?')) {
       return
     }
 
     try {
+      setCancellingOrderId(orderId)
       await orderAPI.cancel(orderId)
       alert('Order cancelled successfully')
       fetchOrders()
     } catch (err) {
       console.error('Error cancelling order:', err)
       alert(err.message || 'Failed to cancel order')
+    } finally {
+      setCancellingOrderId(null)
     }
   }
 
@@ -126,19 +162,34 @@ const MyOrders = () => {
           </div>
         )}
 
-        {/* Info: only paid orders are shown */}
         <div className="card mb-3 mb-md-4 border-0 shadow-sm">
-          <div className="card-body p-3 p-md-3 d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-2">
-            <div>
-              <p className="mb-1 fw-semibold" style={{ fontSize: 'clamp(0.9rem, 2.1vw, 1rem)' }}>
-                Showing only <span className="text-success">paid</span> orders
-              </p>
-              <p className="mb-0 text-muted" style={{ fontSize: 'clamp(0.8rem, 2vw, 0.9rem)' }}>
-                Orders that are pending or failed payment are hidden from this list.
-              </p>
-            </div>
-            <div className="text-muted small">
-              Total paid orders: <strong>{pagination.total}</strong>
+          <div className="card-body p-3">
+            <div className="row g-2 align-items-end">
+              <div className="col-12 col-md-4">
+                <label
+                  htmlFor="my-orders-status-filter"
+                  className="form-label mb-1 fw-semibold"
+                  style={{ fontSize: 'clamp(0.8rem, 2vw, 0.9rem)' }}
+                >
+                  Filter by Status
+                </label>
+                <select
+                  id="my-orders-status-filter"
+                  className="form-select form-select-sm w-100"
+                  value={statusFilter}
+                  onChange={handleStatusFilterChange}
+                >
+                  {orderStatusOptions.map((option) => (
+                    <option key={option.value || 'all'} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="col-12 col-md-8 text-muted small text-md-end">
+                Total orders: <strong>{pagination.total}</strong>
+              </div>
             </div>
           </div>
         </div>
@@ -146,9 +197,13 @@ const MyOrders = () => {
         {orders.length === 0 ? (
             <div className="card">
               <div className="card-body text-center py-4 py-md-5 px-3">
-                <h5 className="text-muted fw-semibold mb-2 mb-md-3" style={{ fontSize: 'clamp(1rem, 2.5vw, 1.1rem)' }}>No paid orders yet</h5>
+                <h2 className="text-muted fw-semibold mb-2 mb-md-3" style={{ fontSize: 'clamp(1rem, 2.5vw, 1.1rem)' }}>
+                  {statusFilter ? `No ${statusFilter} orders yet` : 'No orders yet'}
+                </h2>
                 <p className="text-muted mb-3 mb-md-4" style={{ fontSize: 'clamp(0.85rem, 2vw, 0.95rem)' }}>
-                  Once your payments complete successfully, your orders will appear here.
+                  {statusFilter
+                    ? 'Try changing the status filter to view other orders.'
+                    : 'Once you place an order, it will appear here.'}
                 </p>
               <Link to="/shop" className="btn btn-primary" style={{ fontSize: 'clamp(0.9rem, 2vw, 1rem)', padding: 'clamp(0.5rem, 1.5vw, 0.75rem) 1.5rem' }}>
                 Start Shopping
@@ -162,15 +217,19 @@ const MyOrders = () => {
                 <div className="card-header bg-light p-3 p-md-4">
                   <div className="row align-items-center g-2">
                     <div className="col-12 col-md-6">
-                      <h5 className="mb-0 mb-md-0" style={{ fontSize: 'clamp(0.95rem, 2.5vw, 1.1rem)' }}>
+                      <h2 className="mb-0 mb-md-0" style={{ fontSize: 'clamp(0.95rem, 2.5vw, 1.1rem)' }}>
                         Order #{order.orderNumber || order.id}
-                        <span className={`badge bg-${getStatusBadge(order.status)} ms-2`} style={{ fontSize: 'clamp(0.7rem, 1.8vw, 0.85rem)' }}>
+                        <span
+                          className={`badge bg-${getStatusBadge(order.status)} ms-2 ${getStatusTextClass(order.status)}`}
+                          style={{ fontSize: 'clamp(0.7rem, 1.8vw, 0.85rem)' }}
+                          aria-label={`Order status ${order.status?.toUpperCase()}`}
+                        >
                           {order.status?.toUpperCase()}
                         </span>
-                      </h5>
+                      </h2>
                     </div>
                     <div className="col-12 col-md-6 text-start text-md-end">
-                      <small className="text-muted" style={{ fontSize: 'clamp(0.75rem, 2vw, 0.85rem)' }}>
+                      <small style={{ fontSize: 'clamp(0.75rem, 2vw, 0.85rem)', color: '#495057' }}>
                         Placed on {formatDate(order.createdAt)}
                       </small>
                     </div>
@@ -187,6 +246,9 @@ const MyOrders = () => {
                                 <img
                                   src={getImageUrl(item.product.images[0].imageUrl)}
                                   alt={item.product.title}
+                                  loading="lazy"
+                                  width="50"
+                                  height="50"
                                   style={{
                                     width: 'clamp(45px, 12vw, 50px)',
                                     height: 'clamp(45px, 12vw, 50px)',
@@ -237,14 +299,14 @@ const MyOrders = () => {
                     </div>
                     <div className="col-12 col-md-4">
                       <div className="mb-3 text-start text-md-end">
-                        <h4 className="text-primary mb-1 mb-md-0" style={{ fontSize: 'clamp(1.25rem, 3vw, 1.5rem)' }}>
+                        <h3 className="text-primary mb-1 mb-md-0" style={{ fontSize: 'clamp(1.25rem, 3vw, 1.5rem)' }}>
                           {formatCurrency(order.totalAmount)}
-                        </h4>
+                        </h3>
                         <small className="text-muted d-block" style={{ fontSize: 'clamp(0.75rem, 2vw, 0.85rem)' }}>
                           {order.orderItems?.reduce((sum, item) => sum + item.quantity, 0) || 0} item(s)
                         </small>
                       </div>
-                      <div className="d-grid gap-2 d-md-block text-md-end">
+                      <div className="d-flex flex-column gap-2 text-md-end align-items-stretch align-items-md-end">
                         <Link
                           to={`/order-success/${order.id}`}
                           className="btn btn-primary btn-sm my-orders-action-btn w-100 w-md-auto"
@@ -255,19 +317,20 @@ const MyOrders = () => {
                         {(order.awbCode || order.shipmentId) && (
                           <Link
                             to={`/order/${order.id}/track`}
-                            className="btn btn-outline-info btn-sm my-orders-action-btn w-100 w-md-auto"
+                            className="btn btn-primary btn-sm my-orders-action-btn w-100 w-md-auto"
                             style={{ fontSize: 'clamp(0.8rem, 2vw, 0.9rem)' }}
                           >
                             Track Order
                           </Link>
                         )}
-                        {order.status === 'pending' && (
+                        {order.status !== 'cancelled' && order.status !== 'delivered' && (
                           <button
                             className="btn btn-outline-danger btn-sm my-orders-action-btn w-100 w-md-auto"
                             onClick={() => handleCancelOrder(order.id)}
+                            disabled={cancellingOrderId === order.id}
                             style={{ fontSize: 'clamp(0.8rem, 2vw, 0.9rem)' }}
                           >
-                            Cancel Order
+                            {cancellingOrderId === order.id ? 'Cancelling...' : 'Cancel Order'}
                           </button>
                         )}
                       </div>

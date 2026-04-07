@@ -16,10 +16,19 @@ const FeaturedProducts = ({ title = 'Featured Products', categoryId = null, limi
   const [categorySlug, setCategorySlug] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isMobileView, setIsMobileView] = useState(
+    typeof window !== 'undefined' ? window.innerWidth < 576 : false
+  );
 
   useEffect(() => {
     loadProducts();
   }, [categoryId]);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobileView(window.innerWidth < 576);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -112,27 +121,27 @@ const FeaturedProducts = ({ title = 'Featured Products', categoryId = null, limi
     <section className="featured-products padding-large">
       <div className="container">
         <div className="row">
-          <div className="display-header d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+          <div className="display-header d-flex justify-content-between align-items-center mb-0 pb-3 border-bottom">
             <h2 className="display-7 text-center text-dark text-uppercase mb-0">{title}</h2>
             {showViewAll && (
               <Link 
                 to={categorySlug ? `/shop?categorySlug=${categorySlug}` : (categoryId ? `/shop?categoryId=${categoryId}` : '/shop')} 
                 className="btn text-uppercase"
                 style={{
-                  borderColor: '#89bb56',
-                  color: '#89bb56',
+                  borderColor: '#547535',
+                  color: '#547535',
                   backgroundColor: 'transparent',
                   transition: 'all 0.3s ease'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#89bb56';
+                  e.currentTarget.style.backgroundColor = '#547535';
                   e.currentTarget.style.color = '#fff';
-                  e.currentTarget.style.borderColor = '#89bb56';
+                  e.currentTarget.style.borderColor = '#547535';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.backgroundColor = 'transparent';
-                  e.currentTarget.style.color = '#89bb56';
-                  e.currentTarget.style.borderColor = '#89bb56';
+                  e.currentTarget.style.color = '#547535';
+                  e.currentTarget.style.borderColor = '#547535';
                 }}
               >
                 View All
@@ -157,6 +166,36 @@ const FeaturedProducts = ({ title = 'Featured Products', categoryId = null, limi
           ) : products.length === 0 ? (
             <div className="col-12 text-center py-5">
               <p className="text-muted">No products available at the moment.</p>
+            </div>
+          ) : isMobileView ? (
+            <div className="row g-3">
+              {products.map((product) => {
+                const productData = {
+                  id: product.id,
+                  title: product.title || product.name,
+                  price: parseFloat(product.price || 0),
+                  discountPrice: product.discountPrice ? parseFloat(product.discountPrice) : null,
+                  thumbnailImage: product.thumbnailImage,
+                  images: product.images,
+                  rating: ratingsMap[product.id]?.averageRating ?? product.rating ?? product.averageRating ?? 0,
+                  reviewCount: ratingsMap[product.id]?.reviewCount ?? product.reviewCount ?? product.reviewsCount ?? 0,
+                  fiveStarCount: ratingsMap[product.id]?.fiveStarCount ?? product?.ratingSummary?.count5 ?? product?.count5 ?? 0,
+                  inStock: product.inStock !== false,
+                  category: product.category,
+                  sku: product.sku ?? '',
+                };
+
+                return (
+                  <div key={product.id} className="col-6">
+                    <ProductCard
+                      product={productData}
+                      onAddToCart={handleAddToCart}
+                      showAddToCart={true}
+                      showBuyNow={false}
+                    />
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <Swiper

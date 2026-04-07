@@ -41,6 +41,9 @@ const Home = () => {
 
   return (
     <>
+      <h1 className="visually-hidden">
+        FOXECOM — Premium iPhone cases, phone covers, and electronics accessories
+      </h1>
       <Billboard />
       {/* <CompanyServices /> */}
 

@@ -14,93 +14,63 @@ const Footer = () => {
         <div className="container">
           <div className="row">
             <div className="footer-top-area">
-              <div className="row d-flex flex-wrap justify-content-between">
+              <div className="row d-flex justify-center">
+                {/* flex-wrap justify-content-between */}
                 <div className="col-lg-3 col-sm-6 pb-3">
                   <div className="footer-menu">
-                    <img src={mainLogo} alt="logo" width={100} />
+                    <img
+                      src={mainLogo}
+                      alt="FOXECOM"
+                      width={300}
+                      height={211}
+                      loading="lazy"
+                      style={{ maxWidth: '100px', width: '100%', height: 'auto' }}
+                    />
                     <p>
                       FOXECOM brings you premium mobile accessories and gadgets with a focus on
                       quality, durability and everyday style. We ship across India with secure
                       payments and responsive customer support.
                     </p>
-                    {/* <div className="social-links">
-                      <ul className="d-flex list-unstyled">
-                        <li>
-                          <a href="#">
-                            <svg className="facebook">
-                              <use xlinkHref="#facebook" />
-                            </svg>
-                          </a>
-                        </li>
-                        <li>
-                          <a href="#">
-                            <svg className="instagram">
-                              <use xlinkHref="#instagram" />
-                            </svg>
-                          </a>
-                        </li>
-                        <li>
-                          <a href="#">
-                            <svg className="twitter">
-                              <use xlinkHref="#twitter" />
-                            </svg>
-                          </a>
-                        </li>
-                        <li>
-                          <a href="#">
-                            <svg className="linkedin">
-                              <use xlinkHref="#linkedin" />
-                            </svg>
-                          </a>
-                        </li>
-                        <li>
-                          <a href="#">
-                            <svg className="youtube">
-                              <use xlinkHref="#youtube" />
-                            </svg>
-                          </a>
-                        </li>
-                      </ul>
-                    </div> */}
+                   
                   </div>
                 </div>
                 <div className="col-lg-2 col-sm-6 pb-3">
                   <div className="footer-menu text-uppercase">
-                    <h5 className="widget-title pb-2">Quick Links</h5>
+                    <h2 className="widget-title">Quick Links</h2>
                     <ul className="menu-list list-unstyled text-uppercase">
-                      <li className="menu-item pb-2">
-                        <Link to="/">Home</Link>
+                      <li className="menu-item">
+                        <Link className="footer-list" to="/">Home</Link>
                       </li>
                       {/* <li className="menu-item pb-2">
                         <Link to="/about-us">About</Link>
                       </li> */}
-                      <li className="menu-item pb-2">
-                        <Link to="/shop">Shop</Link>
+                      <li className="menu-item">
+                        <Link className="footer-list" to="/shop">Shop</Link>
                       </li>
-                      <li className="menu-item pb-2">
-                        <Link to="/contact-us">Contact</Link>
+                      <li className="menu-item">
+                        <Link className="footer-list" to="/contact-us">Contact</Link>
                       </li>
                     </ul>
                   </div>
                 </div>
                 <div className="col-lg-3 col-sm-6 pb-3">
                   <div className="footer-menu text-uppercase">
-                    <h5 className="widget-title pb-2">Help & Info Help</h5>
+                    <h2 className="widget-title">Help & Info Help</h2>
                     <ul className="menu-list list-unstyled">
-                    <li className="menu-item pb-2">
-                        <Link to="/disclaimer">Disclaimer</Link>
+                    <li className="menu-item">
+                        <Link className="footer-list" to="/disclaimer">Disclaimer</Link>
                       </li>
-                      <li className="menu-item pb-2">
-                        <Link to="/privacy-policy">Privacy & Policy</Link>
+                      <li className="menu-item">
+                        <Link className="footer-list" to="/privacy-policy">Privacy & Policy</Link>
                       </li>
-                      <li className="menu-item pb-2">
-                        <Link to="/refund-policy">Returns Policies</Link>
+                      <li className="menu-item">
+                        <Link className="footer-list" to="/refund-policy">Returns Policies</Link>
                       </li>
                       {/* <li className="menu-item pb-2">
                         <Link to="/contact-us">Shipping + Delivery</Link>
                       </li> */}
-                      <li className="menu-item pb-2">
-                        <Link to="/terms">Terms of Service</Link>
+                      <li className="menu-item">
+                        <Link className="footer-list" to="/terms">Terms of Service</Link>
                       </li>
                      
                       
@@ -109,10 +79,10 @@ const Footer = () => {
                 </div>
                 <div className="col-lg-3 col-sm-6 pb-3">
                   <div className="footer-menu contact-item">
-                    <h5 className="widget-title text-uppercase pb-2">Contact Us</h5>
-                    <p>Do you have any queries or suggestions? <a href="mailto:foxecom99@gmail.com">foxecom99@gmail.com</a>
+                    <h2 className="widget-title text-uppercase">Contact Us</h2>
+                    <p className='footer-text'>Do you have any queries or suggestions? <a href="mailto:foxecom99@gmail.com">foxecom99@gmail.com</a>
                     </p>
-                    <p>If you need support? Just call us on  <a href="">+91 9289125523</a>
+                    <p className='footer-text'>If you need support? Just call us on  <a href="">+91 9289125523</a>
                     </p>
                   </div>
                 </div>

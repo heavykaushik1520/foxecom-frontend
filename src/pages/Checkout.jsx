@@ -64,6 +64,17 @@ const Checkout = () => {
   const [errors, setErrors] = useState({})
   const [processingPayment, setProcessingPayment] = useState(false)
   const [preferredPaymentMethod, setPreferredPaymentMethod] = useState('OTHER')
+  // Show toast immediately on initial render when user is not logged in.
+  const [centerToast, setCenterToast] = useState(() => ({
+    open: !isLoggedIn,
+    message: !isLoggedIn ? 'Please login to proceed with checkout' : '',
+    variant: 'warning',
+  }))
+  const navigationTimeoutRef = React.useRef(null)
+
+  const showCenterToast = (message, variant = 'warning') => {
+    setCenterToast({ open: true, message, variant })
+  }
 
   // Auto-fill email from logged-in customer profile (but keep it editable).
   useEffect(() => {
@@ -96,9 +107,13 @@ const Checkout = () => {
   useEffect(() => {
     // Check login status and cart items whenever they change
     if (!isLoggedIn) {
-      alert('Please login to proceed with checkout')
       localStorage.setItem('redirectAfterLogin', '/checkout')
-      navigate('/login')
+      showCenterToast('Please login to proceed with checkout', 'warning')
+      // Give the toast time to be visible before redirecting.
+      if (navigationTimeoutRef.current) clearTimeout(navigationTimeoutRef.current)
+      navigationTimeoutRef.current = setTimeout(() => {
+        navigate('/login')
+      }, 1200)
       return
     }
 
@@ -117,6 +132,18 @@ const Checkout = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoggedIn, cartItems.length, preferredPaymentMethod])
 
+  useEffect(() => {
+    if (!centerToast.open) return
+    const t = setTimeout(() => setCenterToast((prev) => ({ ...prev, open: false })), 2200)
+    return () => clearTimeout(t)
+  }, [centerToast.open])
+
+  useEffect(() => {
+    return () => {
+      if (navigationTimeoutRef.current) clearTimeout(navigationTimeoutRef.current)
+    }
+  }, [])
+
   const loadCheckoutSummary = async () => {
     try {
       setLoading(true)
@@ -124,7 +151,7 @@ const Checkout = () => {
       setCheckoutSummary(data)
     } catch (error) {
       console.error('Error loading checkout summary:', error)
-      alert('Failed to load checkout details. Please try again.')
+      showCenterToast('Failed to load checkout details. Please try again.', 'error')
       navigate('/cart')
     } finally {
       setLoading(false)
@@ -182,7 +209,7 @@ const Checkout = () => {
       // Validate address first
       const addressValidation = await checkoutAPI.validateAddress(formData)
       if (!addressValidation.isValid) {
-        alert('Please check your shipping address')
+        showCenterToast('Please check your shipping address.', 'warning')
         return
       }
 
@@ -202,7 +229,7 @@ const Checkout = () => {
 
     } catch (error) {
       console.error('Error processing order:', error)
-      alert(error.message || 'Failed to process order. Please try again.')
+      showCenterToast(error.message || 'Failed to process order. Please try again.', 'error')
     } finally {
       setLoading(false)
     }
@@ -231,7 +258,7 @@ const Checkout = () => {
       document.close()
     } catch (error) {
       console.error('Error initiating payment:', error)
-      alert(error.message || 'Failed to initiate payment. Please try again.')
+      showCenterToast(error.message || 'Failed to initiate payment. Please try again.', 'error')
       setProcessingPayment(false)
     }
   }
@@ -255,8 +282,17 @@ const Checkout = () => {
   }
 
   if (!isLoggedIn) {
-    navigate('/login')
-    return null
+    return (
+      <div className="padding-large checkout-page">
+        {centerToast.open && (
+          <div className="checkout-center-toast-overlay" role="status" aria-live="polite" aria-atomic="true">
+            <div className={`checkout-center-toast checkout-center-toast--${centerToast.variant}`}>
+              {centerToast.message}
+            </div>
+          </div>
+        )}
+      </div>
+    )
   }
 
   if (cartItems.length === 0) {
@@ -267,194 +303,47 @@ const Checkout = () => {
   const summary = checkoutSummary?.summary
 
   return (
-    <div className="padding-large">
-      <div className="container">
-        <h1 className="h2 h-md-3 text-uppercase mb-4 fw-bold" style={{ fontSize: 'clamp(1.5rem, 4vw, 2rem)' }}>Checkout</h1>
-
-        <div className="row">
-          <div className="col-lg-8">
-            <div className="card">
-              <div className="card-header">
-                <h5 className="mb-0 fw-semibold" style={{ fontSize: '1.1rem' }}>Shipping Information</h5>
-              </div>
-              <div className="card-body">
-                <form onSubmit={handleSubmit}>
-                  <div className="row mb-3">
-                    <div className="col-md-6">
-                      <label className="form-label">First Name *</label>
-                      <input
-                        type="text"
-                        className={`form-control ${errors.firstName ? 'is-invalid' : ''}`}
-                        name="firstName"
-                        value={formData.firstName}
-                        onChange={handleChange}
-                        required
-                      />
-                      {errors.firstName && <div className="invalid-feedback">{errors.firstName}</div>}
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Last Name *</label>
-                      <input
-                        type="text"
-                        className={`form-control ${errors.lastName ? 'is-invalid' : ''}`}
-                        name="lastName"
-                        value={formData.lastName}
-                        onChange={handleChange}
-                        required
-                      />
-                      {errors.lastName && <div className="invalid-feedback">{errors.lastName}</div>}
-                    </div>
-                  </div>
-
-                  <div className="row mb-3">
-                    <div className="col-md-6">
-                      <label className="form-label">Email *</label>
-                      <input
-                        type="email"
-                        className={`form-control ${errors.emailAddress ? 'is-invalid' : ''}`}
-                        name="emailAddress"
-                        value={formData.emailAddress}
-                        onChange={handleChange}
-                        required
-                      />
-                      {errors.emailAddress && <div className="invalid-feedback">{errors.emailAddress}</div>}
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Mobile Number *</label>
-                      <input
-                        type="tel"
-                        className={`form-control ${errors.mobileNumber ? 'is-invalid' : ''}`}
-                        name="mobileNumber"
-                        value={formData.mobileNumber}
-                        onChange={handleChange}
-                        maxLength="10"
-                        required
-                      />
-                      {errors.mobileNumber && <div className="invalid-feedback">{errors.mobileNumber}</div>}
-                    </div>
-                  </div>
-
-                  <div className="row mb-3">
-                    <div className="col-md-6">
-                      <label className="form-label">Flat / House No.*</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        name="flatNumber"
-                        value={formData.flatNumber}
-                        onChange={handleChange}
-                        maxLength="100"
-                      />
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Building / House Name *</label>
-                      <input
-                        type="text"
-                        className={`form-control ${errors.buildingName ? 'is-invalid' : ''}`}
-                        name="buildingName"
-                        value={formData.buildingName}
-                        onChange={handleChange}
-                        maxLength="150"
-                        required
-                      />
-                      {errors.buildingName && <div className="invalid-feedback">{errors.buildingName}</div>}
-                    </div>
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="form-label">Full Address *</label>
-                    <textarea
-                      className={`form-control ${errors.fullAddress ? 'is-invalid' : ''}`}
-                      name="fullAddress"
-                      value={formData.fullAddress}
-                      onChange={handleChange}
-                      rows="3"
-                      required
-                    />
-                    {errors.fullAddress && <div className="invalid-feedback">{errors.fullAddress}</div>}
-                  </div>
-
-                  <div className="row mb-3">
-                    <div className="col-md-6">
-                      <label className="form-label">City *</label>
-                      <input
-                        type="text"
-                        className={`form-control ${errors.townOrCity ? 'is-invalid' : ''}`}
-                        name="townOrCity"
-                        value={formData.townOrCity}
-                        onChange={handleChange}
-                        required
-                      />
-                      {errors.townOrCity && <div className="invalid-feedback">{errors.townOrCity}</div>}
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Pin Code *</label>
-                      <input
-                        type="text"
-                        className={`form-control ${errors.pinCode ? 'is-invalid' : ''}`}
-                        name="pinCode"
-                        value={formData.pinCode}
-                        onChange={handleChange}
-                        maxLength="6"
-                        required
-                      />
-                      {errors.pinCode && <div className="invalid-feedback">{errors.pinCode}</div>}
-                    </div>
-                  </div>
-
-                  <div className="row mb-3">
-                    <div className="col-md-6">
-                      <label className="form-label">State *</label>
-                      <select
-                        className={`form-select ${errors.state ? 'is-invalid' : ''}`}
-                        name="state"
-                        value={formData.state}
-                        onChange={handleChange}
-                        required
-                      >
-                        <option value="">Select state</option>
-                        {INDIAN_STATES_AND_UTS.map((state) => (
-                          <option key={state} value={state}>
-                            {state}
-                          </option>
-                        ))}
-                      </select>
-                      {errors.state && <div className="invalid-feedback">{errors.state}</div>}
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label">Country *</label>
-                      <select
-                        className={`form-select ${errors.country ? 'is-invalid' : ''}`}
-                        name="country"
-                        value={formData.country}
-                        onChange={handleChange}
-                        required
-                      >
-                        <option value="India">India</option>
-                        <option value="USA">United States</option>
-                        <option value="UK">United Kingdom</option>
-                      </select>
-                      {errors.country && <div className="invalid-feedback">{errors.country}</div>}
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="btn btn-primary btn-lg w-100 btn-proceed-payment"
-                    disabled={loading || processingPayment}
-                  >
-                    {processingPayment ? 'Processing Payment...' : loading ? 'Processing...' : 'Proceed to Payment'}
-                  </button>
-                </form>
-              </div>
-            </div>
+    <div className="padding-large checkout-page">
+      {centerToast.open && (
+        <div className="checkout-center-toast-overlay" role="status" aria-live="polite" aria-atomic="true">
+          <div className={`checkout-center-toast checkout-center-toast--${centerToast.variant}`}>
+            {centerToast.message}
           </div>
+        </div>
+      )}
+      <div className="container">
+        <div className="checkout-title-wrap">
+          <h1 className="h2 h-md-3 text-uppercase mb-4 fw-bold checkout-title" style={{ fontSize: 'clamp(1.5rem, 4vw, 2rem)' }}>
+            Checkout
+          </h1>
+          <p className="checkout-subtitle mb-4 mb-md-5">
+            Enter your shipping details, choose payment method, and confirm your order.
+          </p>
+        </div>
 
-          <div className="col-lg-4">
-            <div className="card">
+        <div className="checkout-stepper mb-4" aria-label="Checkout steps">
+          <div className="checkout-step is-complete">
+            <span className="checkout-step-dot">1</span>
+            <span className="checkout-step-label">Shipping</span>
+          </div>
+          <div className="checkout-step">
+            <span className="checkout-step-dot">2</span>
+            <span className="checkout-step-label">Payment</span>
+          </div>
+        </div>
+
+        <div className="row g-4">
+          {/* On mobile show summary first so total is visible while typing */}
+          <div className="col-lg-4 order-1 order-lg-2">
+            <div className="card checkout-card">
               <div className="card-header">
                 <div className="d-flex justify-content-between align-items-center">
-                  <h5 className="mb-0 fw-semibold" style={{ fontSize: '1.1rem' }}>Order Summary</h5>
+                  <div className="d-flex align-items-center gap-2">
+                    <i className="bi bi-receipt" aria-hidden="true"></i>
+                    <h2 className="mb-0 fw-semibold checkout-summary-title" style={{ fontSize: '1.1rem' }}>
+                      Order Summary
+                    </h2>
+                  </div>
                   {isBuyNowMode && (
                     <span className="badge bg-warning text-dark">
                       <i className="bi bi-lightning-fill me-1"></i>
@@ -463,7 +352,7 @@ const Checkout = () => {
                   )}
                 </div>
                 {isBuyNowMode && (
-                  <small className="text-muted mt-1 d-block">
+                  <small className="text-muted mt-1 d-block checkout-help">
                     You can adjust quantity before checkout
                   </small>
                 )}
@@ -476,9 +365,9 @@ const Checkout = () => {
                         <strong>{item.title}</strong>
                         {isBuyNowMode && (
                           <div className="mt-2">
-                            <div className="d-flex align-items-center gap-2">
-                              <label className="small text-muted mb-0">Quantity:</label>
-                              <div className="d-flex align-items-center border rounded">
+                            <div className="d-flex align-items-center gap-2 checkout-qty-row">
+                              <label className="small text-muted mb-0 checkout-qty-label">Quantity:</label>
+                              <div className="d-flex align-items-center border rounded checkout-qty-control">
                                 <button
                                   type="button"
                                   className="btn btn-sm btn-outline-secondary"
@@ -490,7 +379,7 @@ const Checkout = () => {
                                 >
                                   <i className="bi bi-dash"></i>
                                 </button>
-                                <span className="px-3" style={{ minWidth: '40px', textAlign: 'center' }}>
+                                <span className="checkout-qty-count">
                                   {item.quantity}
                                 </span>
                                 <button
@@ -530,14 +419,17 @@ const Checkout = () => {
                 )}
                 <div className="mb-3">
                   <label className="form-label small fw-semibold">Payment method</label>
-                  <div className="d-flex gap-2 flex-wrap">
-                    <label className="d-flex align-items-center gap-2 border rounded px-3 py-2 cursor-pointer flex-grow-1" style={{ minWidth: '140px', cursor: 'pointer' }}>
+                  <div className="d-flex gap-2 flex-wrap checkout-payment-tiles">
+                    <label
+                      className={`checkout-payment-tile d-flex align-items-center gap-2 border rounded flex-grow-1 cursor-pointer ${preferredPaymentMethod === 'UPI' ? 'is-selected' : ''}`}
+                      style={{ minWidth: '140px', cursor: 'pointer' }}
+                    >
                       <input
                         type="radio"
                         name="paymentMethod"
                         checked={preferredPaymentMethod === 'UPI'}
                         onChange={() => setPreferredPaymentMethod('UPI')}
-                        className="form-check-input"
+                        className="form-check-input checkout-radio"
                       />
                       <span>UPI</span>
                       {summary?.nextOrderNumber === 2 && (
@@ -547,13 +439,16 @@ const Checkout = () => {
                         <span className="badge bg-success">20% off</span>
                       )}
                     </label>
-                    <label className="d-flex align-items-center gap-2 border rounded px-3 py-2 cursor-pointer flex-grow-1" style={{ minWidth: '140px', cursor: 'pointer' }}>
+                    <label
+                      className={`checkout-payment-tile d-flex align-items-center gap-2 border rounded flex-grow-1 cursor-pointer ${preferredPaymentMethod === 'OTHER' ? 'is-selected' : ''}`}
+                      style={{ minWidth: '140px', cursor: 'pointer' }}
+                    >
                       <input
                         type="radio"
                         name="paymentMethod"
                         checked={preferredPaymentMethod === 'OTHER'}
                         onChange={() => setPreferredPaymentMethod('OTHER')}
-                        className="form-check-input"
+                        className="form-check-input checkout-radio"
                       />
                       <span>Card / Net Banking / Other</span>
                     </label>
@@ -575,6 +470,228 @@ const Checkout = () => {
                   <strong>Total</strong>
                   <strong className="h4 text-primary">{formatPrice(summary?.totalAmount || getCartTotal())}</strong>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="col-lg-8 order-2 order-lg-1">
+            <div className="card checkout-card">
+              <div className="card-header">
+                <h2 className="mb-0 fw-semibold checkout-shipping-title" style={{ fontSize: '1.1rem' }}>
+                  Shipping Information
+                </h2>
+              </div>
+              <div className="card-body">
+                <form className="checkout-form" onSubmit={handleSubmit}>
+                  <div className="row mb-3">
+                    <div className="col-md-6">
+                      <label htmlFor="checkout-firstName" className="form-label checkout-label">
+                        First Name *
+                      </label>
+                      <input
+                        type="text"
+                        id="checkout-firstName"
+                        className={`form-control checkout-input ${errors.firstName ? 'is-invalid' : ''}`}
+                        name="firstName"
+                        value={formData.firstName}
+                        onChange={handleChange}
+                        required
+                      />
+                      {errors.firstName && <div className="invalid-feedback">{errors.firstName}</div>}
+                    </div>
+                    <div className="col-md-6">
+                      <label htmlFor="checkout-lastName" className="form-label checkout-label">
+                        Last Name *
+                      </label>
+                      <input
+                        type="text"
+                        id="checkout-lastName"
+                        className={`form-control checkout-input ${errors.lastName ? 'is-invalid' : ''}`}
+                        name="lastName"
+                        value={formData.lastName}
+                        onChange={handleChange}
+                        required
+                      />
+                      {errors.lastName && <div className="invalid-feedback">{errors.lastName}</div>}
+                    </div>
+                  </div>
+
+                  <div className="row mb-3">
+                    <div className="col-md-6">
+                      <label htmlFor="checkout-emailAddress" className="form-label checkout-label">
+                        Email *
+                      </label>
+                      <input
+                        type="email"
+                        id="checkout-emailAddress"
+                        className={`form-control checkout-input ${errors.emailAddress ? 'is-invalid' : ''}`}
+                        name="emailAddress"
+                        value={formData.emailAddress}
+                        onChange={handleChange}
+                        required
+                      />
+                      {errors.emailAddress && <div className="invalid-feedback">{errors.emailAddress}</div>}
+                    </div>
+                    <div className="col-md-6">
+                      <label htmlFor="checkout-mobileNumber" className="form-label checkout-label">
+                        Mobile Number *
+                      </label>
+                      <input
+                        type="tel"
+                        id="checkout-mobileNumber"
+                        className={`form-control checkout-input ${errors.mobileNumber ? 'is-invalid' : ''}`}
+                        name="mobileNumber"
+                        value={formData.mobileNumber}
+                        onChange={handleChange}
+                        maxLength="10"
+                        inputMode="numeric"
+                        required
+                      />
+                      {errors.mobileNumber && <div className="invalid-feedback">{errors.mobileNumber}</div>}
+                    </div>
+                  </div>
+
+                  <div className="row mb-3">
+                    <div className="col-md-6">
+                      <label htmlFor="checkout-flatNumber" className="form-label checkout-label">
+                        Flat / House No.*
+                      </label>
+                      <input
+                        type="text"
+                        id="checkout-flatNumber"
+                        className="form-control checkout-input"
+                        name="flatNumber"
+                        value={formData.flatNumber}
+                        onChange={handleChange}
+                        maxLength="100"
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label htmlFor="checkout-buildingName" className="form-label checkout-label">
+                        Building / House Name *
+                      </label>
+                      <input
+                        type="text"
+                        id="checkout-buildingName"
+                        className={`form-control checkout-input ${errors.buildingName ? 'is-invalid' : ''}`}
+                        name="buildingName"
+                        value={formData.buildingName}
+                        onChange={handleChange}
+                        maxLength="150"
+                        required
+                      />
+                      {errors.buildingName && <div className="invalid-feedback">{errors.buildingName}</div>}
+                    </div>
+                  </div>
+
+                  <div className="mb-3">
+                    <label htmlFor="checkout-fullAddress" className="form-label checkout-label">
+                      Full Address *
+                    </label>
+                    <textarea
+                      id="checkout-fullAddress"
+                      className={`form-control checkout-input checkout-textarea ${errors.fullAddress ? 'is-invalid' : ''}`}
+                      name="fullAddress"
+                      value={formData.fullAddress}
+                      onChange={handleChange}
+                      rows="2"
+                      required
+                    />
+                    {errors.fullAddress && <div className="invalid-feedback">{errors.fullAddress}</div>}
+                  </div>
+
+                  <div className="row mb-3">
+                    <div className="col-md-6">
+                      <label htmlFor="checkout-townOrCity" className="form-label checkout-label">
+                        City *
+                      </label>
+                      <input
+                        type="text"
+                        id="checkout-townOrCity"
+                        className={`form-control checkout-input ${errors.townOrCity ? 'is-invalid' : ''}`}
+                        name="townOrCity"
+                        value={formData.townOrCity}
+                        onChange={handleChange}
+                        required
+                      />
+                      {errors.townOrCity && <div className="invalid-feedback">{errors.townOrCity}</div>}
+                    </div>
+                    <div className="col-md-6">
+                      <label htmlFor="checkout-pinCode" className="form-label checkout-label">
+                        Pin Code *
+                      </label>
+                      <input
+                        type="text"
+                        id="checkout-pinCode"
+                        className={`form-control checkout-input ${errors.pinCode ? 'is-invalid' : ''}`}
+                        name="pinCode"
+                        value={formData.pinCode}
+                        onChange={handleChange}
+                        maxLength="6"
+                        inputMode="numeric"
+                        required
+                      />
+                      {errors.pinCode && <div className="invalid-feedback">{errors.pinCode}</div>}
+                    </div>
+                  </div>
+
+                  <div className="row mb-3">
+                    <div className="col-md-6">
+                      <label htmlFor="checkout-state" className="form-label checkout-label">
+                        State *
+                      </label>
+                      <select
+                        id="checkout-state"
+                        className={`form-select checkout-input ${errors.state ? 'is-invalid' : ''}`}
+                        name="state"
+                        value={formData.state}
+                        onChange={handleChange}
+                        required
+                        onFocus={(e) => {
+                          // On small screens the native dropdown can overflow below the viewport.
+                          // Scrolling it into view keeps it usable without complex custom dropdowns.
+                          if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                            e.target?.scrollIntoView?.({ block: 'center', behavior: 'smooth' })
+                          }
+                        }}
+                      >
+                        <option value="">Select state</option>
+                        {INDIAN_STATES_AND_UTS.map((state) => (
+                          <option key={state} value={state}>
+                            {state}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.state && <div className="invalid-feedback">{errors.state}</div>}
+                    </div>
+                    <div className="col-md-6">
+                      <label htmlFor="checkout-country" className="form-label checkout-label">
+                        Country *
+                      </label>
+                      <select
+                        id="checkout-country"
+                        className={`form-select checkout-input ${errors.country ? 'is-invalid' : ''}`}
+                        name="country"
+                        value={formData.country}
+                        onChange={handleChange}
+                        required
+                      >
+                        <option value="India">India</option>
+                        <option value="USA">United States</option>
+                        <option value="UK">United Kingdom</option>
+                      </select>
+                      {errors.country && <div className="invalid-feedback">{errors.country}</div>}
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="btn btn-primary w-100 btn-proceed-payment"
+                    disabled={loading || processingPayment}
+                  >
+                    {processingPayment ? 'Processing Payment...' : loading ? 'Processing...' : 'Proceed to Payment'}
+                  </button>
+                </form>
               </div>
             </div>
           </div>

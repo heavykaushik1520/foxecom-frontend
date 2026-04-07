@@ -313,9 +313,9 @@ const AddBuyOneGetOne = () => {
                           <div className="flex-grow-1">
                             <div className="fw-semibold">{product.title}</div>
                             <small className="text-muted">
-                              Rs. {parseFloat(product.price || 0).toFixed(2)}
+                              ₹ {parseFloat(product.price || 0).toFixed(2)}
                               {product.discountPrice &&
-                                ` (Rs. ${parseFloat(product.discountPrice).toFixed(2)})`}
+                                ` (₹ ${parseFloat(product.discountPrice).toFixed(2)})`}
                             </small>
                           </div>
                         </div>

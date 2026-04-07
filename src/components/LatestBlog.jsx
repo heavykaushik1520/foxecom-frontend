@@ -43,7 +43,14 @@ const LatestBlog = () => {
               <div key={post.id} className="col-lg-4 col-sm-12">
                 <div className="card border-none me-3">
                   <div className="card-image">
-                    <img src={post.image} alt="" className="img-fluid" />
+                    <img
+                      src={post.image}
+                      alt=""
+                      className="img-fluid"
+                      loading="lazy"
+                      width="600"
+                      height="400"
+                    />
                   </div>
                 </div>
                 <div className="card-body text-uppercase">
