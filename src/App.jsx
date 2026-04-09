@@ -38,6 +38,8 @@ const MyOrders = lazy(() => import("./pages/MyOrders"));
 const TrackOrder = lazy(() => import("./pages/TrackOrder"));
 const DisclaimerPage = lazy(() => import("./components/DisclaimerPage"));
 const DealOfTheWeekPage = lazy(() => import("./pages/DealOfTheWeekPage"));
+const BlogsPage = lazy(() => import("./pages/BlogsPage"));
+const BlogDetailPage = lazy(() => import("./pages/BlogDetailPage"));
 
 // Lazy load admin pages for code splitting
 const AdminLogin = lazy(() => import("./admin/AdminLogin"));
@@ -88,6 +90,9 @@ const SuperAdminLayout = lazy(() => import("./admin/SuperAdminLayout"));
 const SuperAdminDashboard = lazy(() => import("./admin/SuperAdminDashboard"));
 const CreateSuperAdmin = lazy(() => import("./admin/CreateSuperAdmin"));
 const AnalyticsDashboard = lazy(() => import("./admin/pages/AnalyticsDashboard"));
+const BlogsDashboard = lazy(() => import("./admin/pages/blogs/BlogsDashboard"));
+const AddBlog = lazy(() => import("./admin/pages/blogs/AddBlog"));
+const EditBlog = lazy(() => import("./admin/pages/blogs/EditBlog"));
 
 function AnalyticsPageTracker() {
   useTrackPageVisit();
@@ -162,6 +167,8 @@ function App() {
                   <Route path="disclaimer" element={<DisclaimerPage />} />
                   <Route path="product/:id" element={<ProductDetails />} />
                   <Route path="deal-of-the-week" element={<DealOfTheWeekPage />} />
+                  <Route path="blogs" element={<BlogsPage />} />
+                  <Route path="blog/:slug" element={<BlogDetailPage />} />
                   <Route path="cart" element={<Cart />} />
                   <Route path="checkout" element={<Checkout />} />
                   <Route path="order-success/:id" element={<OrderSuccess />} />
@@ -321,6 +328,9 @@ function App() {
                   <Route path="seller-reviews/edit/:id" element={<EditSellerReview />} />
                   <Route path="seller-reviews/product/:productId" element={<SellerReviewsByProduct />} />
                   <Route path="seller-reviews" element={<SellerReviewsDashboard />} />
+                  <Route path="blogs" element={<BlogsDashboard />} />
+                  <Route path="blogs/create" element={<AddBlog />} />
+                  <Route path="blogs/edit/:id" element={<EditBlog />} />
                 </Route>
 
 

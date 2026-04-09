@@ -170,6 +170,7 @@ const Header = ({ isLoggedIn: isLoggedInProp, setIsLoggedIn: setIsLoggedInProp }
   const handleLogout = async () => {
     try { await userAuthAPI.signout(); } catch (e) { }
     localStorage.removeItem("token");
+    window.dispatchEvent(new Event("loginStatusChanged"));
     setLoginState(false);
     loadCart();
     navigate("/");

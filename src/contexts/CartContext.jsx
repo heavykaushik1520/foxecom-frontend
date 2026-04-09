@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { guestCartAPI, userCartAPI, getImageUrl } from '../utils/api'
 import { STORAGE_KEYS } from '../utils/constants'
 
@@ -43,9 +43,12 @@ export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([])
   const [cart, setCart] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [wasLoggedIn, setWasLoggedIn] = useState(isLoggedIn())
   const [isMerging, setIsMerging] = useState(false)
   const [hasMerged, setHasMerged] = useState(false)
+  /** Last token presence from localStorage — avoids stale React state vs real auth (e.g. logout without event). */
+  const lastTokenRef = useRef(!!localStorage.getItem(STORAGE_KEYS.TOKEN))
+  const mergeGuestCartRef = useRef(null)
+  const loadCartRef = useRef(null)
 
   const [toast, setToast] = useState({
     open: false,
@@ -101,50 +104,6 @@ export const CartProvider = ({ children }) => {
     loadCart()
   }, [])
 
-  // Listen for token changes to reload cart (only when auth state actually changes)
-  useEffect(() => {
-    const handleAuthChange = () => {
-      const hasToken = !!localStorage.getItem(STORAGE_KEYS.TOKEN)
-
-      // No change in auth state – do nothing
-      if (hasToken === wasLoggedIn) {
-        return
-      }
-
-      if (hasToken && !wasLoggedIn) {
-        // User just logged in - merge cart first (it will load cart after merge)
-        setWasLoggedIn(true)
-        mergeGuestCart().catch((error) => {
-          console.error('Merge failed, loading cart anyway:', error)
-          loadCart()
-        })
-      } else if (!hasToken && wasLoggedIn) {
-        // User logged out - reset merge state
-        setHasMerged(false)
-        setWasLoggedIn(false)
-        loadCart()
-      }
-    }
-
-    const handleStorageChange = (e) => {
-      if (e.key === STORAGE_KEYS.TOKEN) {
-        handleAuthChange()
-      }
-    }
-
-    const handleLoginStatusChanged = () => {
-      handleAuthChange()
-    }
-
-    window.addEventListener('storage', handleStorageChange)
-    window.addEventListener('loginStatusChanged', handleLoginStatusChanged)
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange)
-      window.removeEventListener('loginStatusChanged', handleLoginStatusChanged)
-    }
-  }, [wasLoggedIn])
-
   const loadCart = async (shouldMergeFirst = false) => {
     try {
       setLoading(true)
@@ -178,8 +137,7 @@ export const CartProvider = ({ children }) => {
           // If token is invalid/expired, fall back to guest cart
           if (error.isTokenError || (error.message && error.message.includes('Invalid or expired token'))) {
             console.warn('Token expired or invalid, falling back to guest cart')
-            // Token already cleared in api.js, update login state
-            setWasLoggedIn(false)
+            lastTokenRef.current = false
             // Now load guest cart
             const guestCartId = getGuestCartId()
             try {
@@ -272,6 +230,44 @@ export const CartProvider = ({ children }) => {
       setLoading(false)
     }
   }
+
+  mergeGuestCartRef.current = mergeGuestCart
+  loadCartRef.current = loadCart
+
+  useEffect(() => {
+    lastTokenRef.current = !!localStorage.getItem(STORAGE_KEYS.TOKEN)
+
+    const handleAuthChange = () => {
+      const hasToken = !!localStorage.getItem(STORAGE_KEYS.TOKEN)
+      const hadToken = lastTokenRef.current
+
+      if (hasToken === hadToken) return
+
+      lastTokenRef.current = hasToken
+
+      if (hasToken && !hadToken) {
+        mergeGuestCartRef.current().catch((error) => {
+          console.error('Merge failed, loading cart anyway:', error)
+          loadCartRef.current()
+        })
+      } else if (!hasToken && hadToken) {
+        setHasMerged(false)
+        loadCartRef.current()
+      }
+    }
+
+    const onStorage = (e) => {
+      if (e.key === STORAGE_KEYS.TOKEN) handleAuthChange()
+    }
+
+    window.addEventListener('storage', onStorage)
+    window.addEventListener('loginStatusChanged', handleAuthChange)
+
+    return () => {
+      window.removeEventListener('storage', onStorage)
+      window.removeEventListener('loginStatusChanged', handleAuthChange)
+    }
+  }, [])
 
   const addToCart = async (product, quantity = 1) => {
     try {

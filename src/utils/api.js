@@ -198,6 +198,9 @@ const apiRequest = async (endpoint, options = {}) => {
       if (isTokenError) {
         // Clear invalid token
         localStorage.removeItem(STORAGE_KEYS.TOKEN);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('loginStatusChanged'));
+        }
         // Clear user-related data
         localStorage.removeItem(STORAGE_KEYS.USER);
         // Create a custom error that can be caught and handled
@@ -1475,6 +1478,102 @@ export const analyticsAPI = {
   },
 };
 
+// Public + Admin Blog APIs
+export const blogAPI = {
+  // Public
+  getPublished: async (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = `/blogs${queryString ? `?${queryString}` : ''}`;
+    const { data } = await apiRequest(endpoint);
+    return data;
+  },
+  getBySlug: async (slug) => {
+    const { data } = await apiRequest(`/blog/${encodeURIComponent(slug)}`);
+    return data;
+  },
+  getFeatured: async (limit = 3) => {
+    const { data } = await apiRequest(`/blogs/featured?limit=${encodeURIComponent(limit)}`);
+    return data;
+  },
+  getTags: async () => {
+    const { data } = await apiRequest('/blogs/tags');
+    return data;
+  },
+  getRelatedBlogs: async (slug) => {
+    const { data } = await apiRequest(`/blogs/${encodeURIComponent(slug)}/related`);
+    return data;
+  },
+  getRelatedProducts: async (slug) => {
+    const { data } = await apiRequest(`/blogs/${encodeURIComponent(slug)}/related-products`);
+    return data;
+  },
+
+  // Admin
+  adminGetAll: async (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = `/admin/blogs${queryString ? `?${queryString}` : ''}`;
+    const { data } = await adminApiRequest(endpoint);
+    return data;
+  },
+  adminGetById: async (id) => {
+    const { data } = await adminApiRequest(`/admin/blogs/${id}`);
+    return data;
+  },
+  adminGetPreview: async (id) => {
+    const { data } = await adminApiRequest(`/admin/blogs/${id}/preview`);
+    return data;
+  },
+  adminCreate: async (formData) => {
+    const token = getAdminToken();
+    const url = `${API_BASE_URL}/admin/blogs`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+    const refreshedToken = response.headers.get('x-auth-token');
+    if (refreshedToken) {
+      localStorage.setItem(STORAGE_KEYS.ADMIN_TOKEN, refreshedToken);
+    }
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.message || 'Failed to create blog');
+    return data;
+  },
+  adminUpdate: async (id, formData) => {
+    const token = getAdminToken();
+    const url = `${API_BASE_URL}/admin/blogs/${id}`;
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+    const refreshedToken = response.headers.get('x-auth-token');
+    if (refreshedToken) {
+      localStorage.setItem(STORAGE_KEYS.ADMIN_TOKEN, refreshedToken);
+    }
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.message || 'Failed to update blog');
+    return data;
+  },
+  adminDelete: async (id) => {
+    const { data } = await adminApiRequest(`/admin/blogs/${id}`, { method: 'DELETE' });
+    return data;
+  },
+  adminSetStatus: async (id, status) => {
+    const { data } = await adminApiRequest(`/admin/blogs/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+    return data;
+  },
+  adminToggleFeatured: async (id) => {
+    const { data } = await adminApiRequest(`/admin/blogs/${id}/featured`, {
+      method: 'PATCH',
+    });
+    return data;
+  },
+};
+
 export default {
   productAPI,
   categoryAPI,
@@ -1494,4 +1593,5 @@ export default {
   adminAPI,
   superadminAPI,
   analyticsAPI,
+  blogAPI,
 };

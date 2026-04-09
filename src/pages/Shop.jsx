@@ -29,6 +29,7 @@ const Shop = () => {
   const modelIdFromUrl = searchParams.get('modelId') || ''
   const categoryIdFromUrl = searchParams.get('categoryId') || ''
   const categorySlugFromUrl = searchParams.get('categorySlug') || ''
+  const brandNameFromUrl = searchParams.get('brandName') || ''
 
   // State management
   const [products, setProducts] = useState([])
@@ -120,6 +121,13 @@ const Shop = () => {
 
     loadCategoryIdFromSlug()
   }, [categorySlugFromUrl, categoryIdFromUrl])
+
+  // Sync brandName from URL into filters (e.g. from homepage brand section CTA)
+  useEffect(() => {
+    if (brandNameFromUrl) {
+      setFilters((prev) => ({ ...prev, brandName: brandNameFromUrl }))
+    }
+  }, [brandNameFromUrl])
 
   // Load products when filters, sort, or pagination changes
   useEffect(() => {

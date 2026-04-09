@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCart } from '../contexts/CartContext'
 import { checkoutAPI, orderAPI, paymentAPI, userAuthAPI } from '../utils/api'
+import { STORAGE_KEYS } from '../utils/constants'
 
 const INDIAN_STATES_AND_UTS = [
   "Andhra Pradesh",
@@ -106,7 +107,15 @@ const Checkout = () => {
   
   useEffect(() => {
     // Check login status and cart items whenever they change
-    if (!isLoggedIn) {
+    const tokenPresent =
+      typeof window !== 'undefined' && !!localStorage.getItem(STORAGE_KEYS.TOKEN)
+    const effectivelyLoggedIn = isLoggedIn || tokenPresent
+
+    if (!isLoggedIn && tokenPresent) {
+      window.dispatchEvent(new Event('loginStatusChanged'))
+    }
+
+    if (!effectivelyLoggedIn) {
       localStorage.setItem('redirectAfterLogin', '/checkout')
       showCenterToast('Please login to proceed with checkout', 'warning')
       // Give the toast time to be visible before redirecting.

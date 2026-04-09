@@ -48,6 +48,9 @@ const Footer = () => {
                         <Link className="footer-list" to="/shop">Shop</Link>
                       </li>
                       <li className="menu-item">
+                        <Link className="footer-list" to="/blogs">Blogs</Link>
+                      </li>
+                      <li className="menu-item">
                         <Link className="footer-list" to="/contact-us">Contact</Link>
                       </li>
                     </ul>
