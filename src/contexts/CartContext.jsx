@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { guestCartAPI, userCartAPI, getImageUrl } from '../utils/api'
 import { STORAGE_KEYS } from '../utils/constants'
+import { isMultiModelProduct, getUnitPriceForLine } from '../utils/cartLinePrice'
+import { getProductPathSegment } from '../utils/productPath'
 
 const CartContext = createContext()
 
@@ -49,6 +51,8 @@ export const CartProvider = ({ children }) => {
   const lastTokenRef = useRef(!!localStorage.getItem(STORAGE_KEYS.TOKEN))
   const mergeGuestCartRef = useRef(null)
   const loadCartRef = useRef(null)
+  const mergeInProgressRef = useRef(false)
+  const mergedGuestIdsRef = useRef(new Set())
 
   const [toast, setToast] = useState({
     open: false,
@@ -60,6 +64,18 @@ export const CartProvider = ({ children }) => {
     setToast({ open: true, message, variant })
   }
 
+  const redirectToProductForModelSelection = (product) => {
+    try {
+      const segment = getProductPathSegment(product)
+      if (!segment || typeof window === 'undefined') return
+      setTimeout(() => {
+        window.location.assign(`/product/${segment}`)
+      }, 700)
+    } catch {
+      // keep UX safe even if routing segment generation fails
+    }
+  }
+
   useEffect(() => {
     if (!toast.open) return
     const t = setTimeout(() => setToast((prev) => ({ ...prev, open: false })), 3000)
@@ -68,26 +84,33 @@ export const CartProvider = ({ children }) => {
 
   const mergeGuestCart = async () => {
     if (!isLoggedIn()) return
-    
-    // Prevent duplicate merges
-    if (isMerging || hasMerged) {
-      console.log('Cart merge already in progress or completed')
+
+    const guestCartId = localStorage.getItem(STORAGE_KEYS.GUEST_CART_ID)
+    if (!isValidApiGuestCartId(guestCartId)) {
+      if (guestCartId) localStorage.removeItem(STORAGE_KEYS.GUEST_CART_ID)
+      setHasMerged(true)
+      await loadCart()
       return
     }
-    
+
+    // Prevent duplicate merges (state + hard ref lock + per-guest-id guard)
+    if (
+      isMerging ||
+      hasMerged ||
+      mergeInProgressRef.current ||
+      mergedGuestIdsRef.current.has(guestCartId)
+    ) {
+      return
+    }
+
     try {
+      mergeInProgressRef.current = true
       setIsMerging(true)
-      const guestCartId = localStorage.getItem(STORAGE_KEYS.GUEST_CART_ID)
-      if (isValidApiGuestCartId(guestCartId)) {
-        await userCartAPI.mergeGuestCart(guestCartId)
-        localStorage.removeItem(STORAGE_KEYS.GUEST_CART_ID)
-        setHasMerged(true)
-        await loadCart()
-      } else {
-        if (guestCartId) localStorage.removeItem(STORAGE_KEYS.GUEST_CART_ID)
-        setHasMerged(true)
-        await loadCart()
-      }
+      await userCartAPI.mergeGuestCart(guestCartId)
+      mergedGuestIdsRef.current.add(guestCartId)
+      localStorage.removeItem(STORAGE_KEYS.GUEST_CART_ID)
+      setHasMerged(true)
+      await loadCart()
     } catch (error) {
       console.error('Error merging cart:', error)
       // Reset merge state on error so it can be retried
@@ -95,6 +118,7 @@ export const CartProvider = ({ children }) => {
       setHasMerged(false)
       throw error
     } finally {
+      mergeInProgressRef.current = false
       setIsMerging(false)
     }
   }
@@ -116,6 +140,7 @@ export const CartProvider = ({ children }) => {
             setCart(cartData)
             setCartItems(cartData.products.map(p => {
               const imagePath = p.images?.[0]?.imageUrl || p.thumbnailImage
+              const selectedModelId = p.cartItem?.selectedModelId ?? null
               return {
                 id: p.id,
                 slug: p.slug,
@@ -127,6 +152,10 @@ export const CartProvider = ({ children }) => {
                 quantity: p.cartItem.quantity,
                 category: p.category?.name || '',
                 caseDetails: p.caseDetails || null,
+                selectedModelId,
+                availableModels: p.availableModels || null,
+                productType: p.productType || null,
+                stock: p.stock,
               }
             }))
           } else {
@@ -146,6 +175,7 @@ export const CartProvider = ({ children }) => {
                 setCart(cartData)
                 setCartItems(cartData.products.map(p => {
                   const imagePath = p.images?.[0]?.imageUrl || p.thumbnailImage
+                  const selectedModelId = p.cartItem?.selectedModelId ?? null
                   return {
                     id: p.id,
                     slug: p.slug,
@@ -157,6 +187,10 @@ export const CartProvider = ({ children }) => {
                     quantity: p.cartItem.quantity,
                     category: p.category?.name || '',
                     caseDetails: p.caseDetails || null,
+                    selectedModelId,
+                    availableModels: p.availableModels || null,
+                    productType: p.productType || null,
+                    stock: p.stock,
                   }
                 }))
               } else {
@@ -192,6 +226,7 @@ export const CartProvider = ({ children }) => {
             setCart(cartData)
             setCartItems(cartData.products.map(p => {
               const imagePath = p.images?.[0]?.imageUrl || p.thumbnailImage
+              const selectedModelId = p.cartItem?.selectedModelId ?? null
               return {
                 id: p.id,
                 slug: p.slug,
@@ -203,6 +238,10 @@ export const CartProvider = ({ children }) => {
                 quantity: p.cartItem.quantity,
                 category: p.category?.name || '',
                 caseDetails: p.caseDetails || null,
+                selectedModelId,
+                availableModels: p.availableModels || null,
+                productType: p.productType || null,
+                stock: p.stock,
               }
             }))
           } else {
@@ -252,6 +291,8 @@ export const CartProvider = ({ children }) => {
         })
       } else if (!hasToken && hadToken) {
         setHasMerged(false)
+        mergeInProgressRef.current = false
+        mergedGuestIdsRef.current.clear()
         loadCartRef.current()
       }
     }
@@ -269,31 +310,58 @@ export const CartProvider = ({ children }) => {
     }
   }, [])
 
-  const addToCart = async (product, quantity = 1) => {
+  const addToCart = async (product, quantity = 1, selectedModelId = null) => {
     try {
+      if (isMultiModelProduct(product)) {
+        const sid =
+          selectedModelId != null && selectedModelId !== ''
+            ? parseInt(String(selectedModelId), 10)
+            : NaN
+        if (!Number.isFinite(sid)) {
+          showToast('Please select your phone model before adding to cart.', 'warning')
+          redirectToProductForModelSelection(product)
+          return false
+        }
+      }
+
+      const modelIdForApi = isMultiModelProduct(product)
+        ? parseInt(String(selectedModelId), 10)
+        : undefined
+
       if (isLoggedIn()) {
-        await userCartAPI.addItem(product.id, quantity)
+        await userCartAPI.addItem(product.id, quantity, modelIdForApi)
       } else {
         const guestCartId = getGuestCartId()
-        await guestCartAPI.addItem(guestCartId, product.id, quantity)
+        await guestCartAPI.addItem(guestCartId, product.id, quantity, modelIdForApi)
       }
       await loadCart()
       showToast('product added', 'success')
       return true
     } catch (error) {
       console.error('Error adding to cart:', error)
-      alert(error.message || 'Failed to add item to cart')
+      const msg = String(error?.message || '')
+      const isModelSelectionError =
+        msg.includes('Please select a phone model for this product') ||
+        msg.includes('Selected phone model is not available for this product')
+
+      if (isModelSelectionError) {
+        showToast('Please select your phone model before adding to cart.', 'warning')
+        redirectToProductForModelSelection(product)
+        return false
+      }
+
+      showToast(error.message || 'Failed to add item to cart', 'danger')
       return false
     }
   }
 
-  const removeFromCart = async (productId) => {
+  const removeFromCart = async (productId, selectedModelId = null) => {
     try {
       if (isLoggedIn()) {
-        await userCartAPI.removeItem(productId)
+        await userCartAPI.removeItem(productId, selectedModelId)
       } else {
         const guestCartId = getGuestCartId()
-        await guestCartAPI.removeItem(guestCartId, productId)
+        await guestCartAPI.removeItem(guestCartId, productId, selectedModelId)
       }
       await loadCart()
       return true
@@ -304,18 +372,18 @@ export const CartProvider = ({ children }) => {
     }
   }
 
-  const updateQuantity = async (productId, quantity) => {
+  const updateQuantity = async (productId, quantity, selectedModelId = null) => {
     if (quantity <= 0) {
-      await removeFromCart(productId)
+      await removeFromCart(productId, selectedModelId)
       return
     }
     
     try {
       if (isLoggedIn()) {
-        await userCartAPI.updateItem(productId, quantity)
+        await userCartAPI.updateItem(productId, quantity, selectedModelId)
       } else {
         const guestCartId = getGuestCartId()
-        await guestCartAPI.updateItem(guestCartId, productId, quantity)
+        await guestCartAPI.updateItem(guestCartId, productId, quantity, selectedModelId)
       }
       await loadCart()
       return true
@@ -331,11 +399,14 @@ export const CartProvider = ({ children }) => {
       if (isLoggedIn()) {
         await userCartAPI.clear()
       } else {
-        // For guest cart, remove items one by one
         const itemsToRemove = [...cartItems]
         for (const item of itemsToRemove) {
           const guestCartId = getGuestCartId()
-          await guestCartAPI.removeItem(guestCartId, item.id)
+          await guestCartAPI.removeItem(
+            guestCartId,
+            item.id,
+            item.selectedModelId ?? null
+          )
         }
       }
       await loadCart()
@@ -351,13 +422,13 @@ export const CartProvider = ({ children }) => {
    * Buy Now: Clear cart, add product, and mark for buy-now checkout
    * Returns true if successful, allowing caller to navigate to checkout
    */
-  const buyNow = async (product, quantity = 1) => {
+  const buyNow = async (product, quantity = 1, selectedModelId = null) => {
     try {
       // Clear existing cart first
       await clearCart()
       
       // Add the product
-      const success = await addToCart(product, quantity)
+      const success = await addToCart(product, quantity, selectedModelId)
       
       if (success) {
         // Mark as buy-now mode (checkout will detect this)
@@ -376,8 +447,8 @@ export const CartProvider = ({ children }) => {
 
   const getCartTotal = () => {
     return cartItems.reduce((total, item) => {
-      const price = item.discountPrice || item.price
-      return total + (price * item.quantity)
+      const unit = getUnitPriceForLine(item, item.selectedModelId)
+      return total + unit * item.quantity
     }, 0)
   }
 
@@ -385,8 +456,15 @@ export const CartProvider = ({ children }) => {
     return cartItems.reduce((count, item) => count + item.quantity, 0)
   }
 
-  const isInCart = (productId) => {
-    return cartItems.some(item => item.id === productId)
+  const isInCart = (productId, selectedModelId) => {
+    return cartItems.some((item) => {
+      if (item.id !== productId) return false
+      if (selectedModelId === undefined) return true
+      const a = item.selectedModelId ?? null
+      if (selectedModelId === null || selectedModelId === '') return a === null
+      const b = parseInt(String(selectedModelId), 10)
+      return Number.isFinite(b) && Number(a) === b
+    })
   }
 
   const value = {

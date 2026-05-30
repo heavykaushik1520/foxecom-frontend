@@ -210,7 +210,7 @@ const Billboard = () => {
         @media (max-width: 767px) {
           .billboard-inner {
             padding: 0 16px;
-            margin-top:1rem;
+            margin-top:2rem;
           }
           .billboard-slide-img-wrap {
             aspect-ratio: 531 / 316;

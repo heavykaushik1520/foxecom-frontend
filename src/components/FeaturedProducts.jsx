@@ -5,11 +5,20 @@ import { Navigation, Pagination } from 'swiper/modules';
 import { productAPI, reviewAPI, categoryAPI } from '../utils/api';
 import { useCart } from '../contexts/CartContext';
 import ProductCard from './ProductCard';
+import { isMultiModelProduct } from '../utils/cartLinePrice';
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 
-const FeaturedProducts = ({ title = 'Featured Products', categoryId = null, limit = 8, showViewAll = true }) => {
+const FeaturedProducts = ({
+  title = 'Featured Products',
+  categoryId = null,
+  limit = 8,
+  showViewAll = true,
+  onlyVariants = false,
+  showAddToCart = true,
+  showBuyNow = false,
+}) => {
   const { addToCart } = useCart();
   const [products, setProducts] = useState([]);
   const [ratingsMap, setRatingsMap] = useState({});
@@ -22,7 +31,7 @@ const FeaturedProducts = ({ title = 'Featured Products', categoryId = null, limi
 
   useEffect(() => {
     loadProducts();
-  }, [categoryId]);
+  }, [categoryId, onlyVariants, limit]);
 
   useEffect(() => {
     const handleResize = () => setIsMobileView(window.innerWidth < 576);
@@ -96,7 +105,11 @@ const FeaturedProducts = ({ title = 'Featured Products', categoryId = null, limi
       }
 
       const productsData = await productAPI.getAll(params);
-      setProducts(Array.isArray(productsData) ? productsData : []);
+      const list = Array.isArray(productsData) ? productsData : [];
+      const filtered = onlyVariants
+        ? list.filter((p) => isMultiModelProduct(p) || p.productType === 'multi-model')
+        : list;
+      setProducts(filtered);
     } catch (err) {
       console.error('Error loading featured products:', err);
       setError('Failed to load products');
@@ -165,7 +178,11 @@ const FeaturedProducts = ({ title = 'Featured Products', categoryId = null, limi
             </div>
           ) : products.length === 0 ? (
             <div className="col-12 text-center py-5">
-              <p className="text-muted">No products available at the moment.</p>
+              <p className="text-muted">
+                {onlyVariants
+                  ? 'No variant products available at the moment.'
+                  : 'No products available at the moment.'}
+              </p>
             </div>
           ) : isMobileView ? (
             <div className="row g-3">
@@ -190,8 +207,8 @@ const FeaturedProducts = ({ title = 'Featured Products', categoryId = null, limi
                     <ProductCard
                       product={productData}
                       onAddToCart={handleAddToCart}
-                      showAddToCart={true}
-                      showBuyNow={false}
+                      showAddToCart={showAddToCart}
+                      showBuyNow={showBuyNow}
                     />
                   </div>
                 );
@@ -248,8 +265,8 @@ const FeaturedProducts = ({ title = 'Featured Products', categoryId = null, limi
                     <ProductCard
                       product={productData}
                       onAddToCart={handleAddToCart}
-                      showAddToCart={true}
-                      showBuyNow={false}
+                      showAddToCart={showAddToCart}
+                      showBuyNow={showBuyNow}
                     />
                   </SwiperSlide>
                 );

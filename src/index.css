@@ -1246,14 +1246,45 @@ hr {
     line-height: 1.05 !important;
   }
 
-  /* Single product in grid: use full width on small screens */
-  .shop-page .shop-product-grid > .col-6:only-child {
-    width: 100%;
-  }
-
   .shop-page .product-card-model-line {
     display: none !important;
   }
+
+/* Product detail model selector sizing (mobile + laptop) */
+.model-select-label {
+  font-size: clamp(0.86rem, 1.45vw, 0.95rem) !important;
+  line-height: 1.25;
+}
+
+.model-select-control {
+  font-size: clamp(0.84rem, 1.35vw, 0.92rem) !important;
+  min-height: 38px !important;
+  padding: 0.4rem 2rem 0.4rem 0.7rem !important;
+  border-radius: 10px !important;
+  width: 100%;
+  max-width: 380px !important;
+}
+
+/* Product details page: make model dropdown shorter on laptop screens */
+@media (min-width: 992px) and (max-width: 1440px) {
+  .model-select-control--product {
+    max-width: 300px !important;
+  }
+}
+
+.model-select-help {
+  font-size: clamp(0.72rem, 1.1vw, 0.8rem) !important;
+  line-height: 1.3;
+}
+
+@media (max-width: 575px) {
+  .model-select-control {
+    max-width: 100%;
+    min-height: 36px !important;
+    padding: 0.34rem 1.8rem 0.34rem 0.62rem !important;
+    font-size: 0.82rem !important;
+  }
+}
 
   /* Similar Products - match MobileProducts card design */
   .similar-products .col-12 > .row {

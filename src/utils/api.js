@@ -269,6 +269,55 @@ export const bannersAPI = {
   },
 };
 
+// Public marquee ticker API + admin marquee CMS
+export const marqueeAPI = {
+  // Public: one active marquee only
+  getActive: async () => {
+    const { data } = await apiRequest('/marquees/active');
+    return data?.marquee ?? null;
+  },
+
+  // Admin: get all marquees
+  getAll: async () => {
+    const { data } = await adminApiRequest('/admin/marquees');
+    return data?.marquees ?? [];
+  },
+
+  // Admin: create marquee
+  create: async (payload) => {
+    const { data } = await adminApiRequest('/admin/marquees', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    return data;
+  },
+
+  // Admin: update marquee
+  update: async (id, payload) => {
+    const { data } = await adminApiRequest(`/admin/marquees/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+    return data;
+  },
+
+  // Admin: delete marquee
+  delete: async (id) => {
+    const { data } = await adminApiRequest(`/admin/marquees/${id}`, {
+      method: 'DELETE',
+    });
+    return data;
+  },
+
+  // Admin: toggle active/inactive
+  toggle: async (id) => {
+    const { data } = await adminApiRequest(`/admin/marquees/${id}/toggle`, {
+      method: 'PATCH',
+    });
+    return data;
+  },
+};
+
 // Deal of the Week APIs
 export const dealOfTheWeekAPI = {
   // Public: Get active deal
@@ -476,24 +525,36 @@ export const guestCartAPI = {
     return data;
   },
   
-  addItem: async (guestCartId, productId, quantity = 1) => {
+  addItem: async (guestCartId, productId, quantity = 1, selectedModelId) => {
+    const body = { productId, quantity };
+    if (selectedModelId != null && selectedModelId !== '') {
+      body.selectedModelId = selectedModelId;
+    }
     const { data } = await apiRequest(`/guest-cart/${guestCartId}/add`, {
       method: 'POST',
-      body: JSON.stringify({ productId, quantity }),
+      body: JSON.stringify(body),
     });
     return data;
   },
   
-  updateItem: async (guestCartId, productId, quantity) => {
+  updateItem: async (guestCartId, productId, quantity, selectedModelId) => {
+    const body = { productId, quantity };
+    if (selectedModelId != null && selectedModelId !== '') {
+      body.selectedModelId = selectedModelId;
+    }
     const { data } = await apiRequest(`/guest-cart/${guestCartId}/update`, {
       method: 'PUT',
-      body: JSON.stringify({ productId, quantity }),
+      body: JSON.stringify(body),
     });
     return data;
   },
   
-  removeItem: async (guestCartId, productId) => {
-    const { data, status } = await apiRequest(`/guest-cart/${guestCartId}/item/${productId}`, {
+  removeItem: async (guestCartId, productId, selectedModelId) => {
+    let endpoint = `/guest-cart/${guestCartId}/item/${productId}`;
+    if (selectedModelId != null && selectedModelId !== '') {
+      endpoint += `?selectedModelId=${encodeURIComponent(selectedModelId)}`;
+    }
+    const { data, status } = await apiRequest(endpoint, {
       method: 'DELETE',
     });
     // 204 No Content is expected for successful delete
@@ -508,24 +569,36 @@ export const userCartAPI = {
     return data;
   },
   
-  addItem: async (productId, quantity = 1) => {
+  addItem: async (productId, quantity = 1, selectedModelId) => {
+    const body = { productId, quantity };
+    if (selectedModelId != null && selectedModelId !== '') {
+      body.selectedModelId = selectedModelId;
+    }
     const { data } = await apiRequest('/cart/add', {
       method: 'POST',
-      body: JSON.stringify({ productId, quantity }),
+      body: JSON.stringify(body),
     });
     return data;
   },
   
-  updateItem: async (productId, quantity) => {
+  updateItem: async (productId, quantity, selectedModelId) => {
+    const body = { productId, quantity };
+    if (selectedModelId != null && selectedModelId !== '') {
+      body.selectedModelId = selectedModelId;
+    }
     const { data } = await apiRequest('/cart/update', {
       method: 'PUT',
-      body: JSON.stringify({ productId, quantity }),
+      body: JSON.stringify(body),
     });
     return data;
   },
   
-  removeItem: async (productId) => {
-    const { data, status } = await apiRequest(`/cart/${productId}`, {
+  removeItem: async (productId, selectedModelId) => {
+    let endpoint = `/cart/${productId}`;
+    if (selectedModelId != null && selectedModelId !== '') {
+      endpoint += `?selectedModelId=${encodeURIComponent(selectedModelId)}`;
+    }
+    const { data, status } = await apiRequest(endpoint, {
       method: 'DELETE',
     });
     // 204 No Content is expected for successful delete
@@ -1058,6 +1131,43 @@ export const adminAPI = {
     return data;
   },
 
+  // Marquee ticker CMS
+  getMarquees: async () => {
+    const { data } = await adminApiRequest('/admin/marquees');
+    return data?.marquees ?? [];
+  },
+  createMarquee: async (payload) => {
+    const { data } = await adminApiRequest('/admin/marquees', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    return data;
+  },
+  updateMarquee: async (id, payload) => {
+    const { data } = await adminApiRequest(`/admin/marquees/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+    return data;
+  },
+  deleteMarquee: async (id) => {
+    const { data } = await adminApiRequest(`/admin/marquees/${id}`, {
+      method: 'DELETE',
+    });
+    return data;
+  },
+  toggleMarquee: async (id, isActive) => {
+    const payload = {};
+    if (typeof isActive === "boolean") {
+      payload.isActive = isActive;
+    }
+    const { data } = await adminApiRequest(`/admin/marquees/${id}/toggle`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+    return data;
+  },
+
   // Product Reviews (admin-managed CMS)
   getProductReviews: async (productId) => {
     const { data } = await adminApiRequest(`/admin/products/${productId}/reviews`);
@@ -1301,6 +1411,15 @@ export const adminAPI = {
     await adminApiRequest(`/case-details/${id}`, {
       method: 'DELETE',
     });
+  },
+
+  /** Bulk assign phone models + optional per-model price override (multi-model cases) */
+  createProductAvailableModels: async (payload) => {
+    const { data } = await adminApiRequest('/case-details/available-models', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    return data;
   },
 
   // User Management (Admin only) - CRUD
@@ -1578,6 +1697,7 @@ export default {
   productAPI,
   categoryAPI,
   bannersAPI,
+  marqueeAPI,
   mobileBrandAPI,
   mobileModelAPI,
   guestCartAPI,

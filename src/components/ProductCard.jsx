@@ -4,6 +4,7 @@ import { getImageUrl } from '../utils/api';
 import { getProductPathSegment } from '../utils/productPath';
 import { useCart } from '../contexts/CartContext';
 import ProductRatingExpandable from './ProductRatingExpandable';
+import { emitAppToast } from '../utils/toast';
 
 /**
  * Memoized Product Card Component
@@ -67,9 +68,11 @@ const ProductCard = memo(({ product, onAddToCart, showAddToCart = true, showBuyN
     // Check if user is logged in
     const token = localStorage.getItem('token');
     if (!token) {
-      alert('Please login to proceed with Buy Now');
+      emitAppToast('Please login to proceed with Buy Now', 'warning');
       localStorage.setItem('redirectAfterLogin', `/product/${pathSegment}`);
-      navigate('/login');
+      setTimeout(() => {
+        navigate('/login');
+      }, 1200);
       return;
     }
 

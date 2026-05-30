@@ -22,7 +22,7 @@ const AdminLogin = ({ setIsAdmin }) => {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      alert("Email and password are required");
+      setError("Email and password are required");
       return;
     }
 

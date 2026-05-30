@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import { API_BASE_URL } from '../utils/api';
+import { emitAppToast } from '../utils/toast';
 
 const Auth = () => {
     const [email, setEmail] = useState("")
@@ -36,11 +37,11 @@ const Auth = () => {
         localStorage.removeItem('redirectAfterLogin')
         navigate(redirectTo);
       } else {
-        alert(data.message || "Login failed");
+        emitAppToast(data.message || "Login failed", "error");
       }
     } catch (err) {
       console.error("Login error:", err);
-      alert("Server error. Please try again.");
+      emitAppToast("Server error. Please try again.", "error");
     }
   };
 

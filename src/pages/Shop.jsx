@@ -3,6 +3,7 @@ import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { reviewAPI, productAPI, categoryAPI, getImageUrl } from '../utils/api'
 import { getProductPathSegment } from '../utils/productPath'
 import { useCart } from '../contexts/CartContext'
+import { isMultiModelProduct } from '../utils/cartLinePrice'
 import fallbackImage from '../assest/images/product-item1.jpg'
 import ProductRatingExpandable from '../components/ProductRatingExpandable'
 
@@ -19,9 +20,11 @@ function stripMarkdownLabel(text) {
     .slice(0, 80) || text
 }
 
-const Shop = () => {
+const Shop = ({ forceVariantsOnly = false }) => {
   const { addToCart, buyNow } = useCart()
   const navigate = useNavigate()
+  const [centerToast, setCenterToast] = useState({ open: false, message: '', variant: 'warning' })
+  const navigationTimeoutRef = React.useRef(null)
   const [isMobileView, setIsMobileView] = useState(
     typeof window !== 'undefined' ? window.innerWidth < 576 : false
   )
@@ -30,6 +33,8 @@ const Shop = () => {
   const categoryIdFromUrl = searchParams.get('categoryId') || ''
   const categorySlugFromUrl = searchParams.get('categorySlug') || ''
   const brandNameFromUrl = searchParams.get('brandName') || ''
+  const variantsOnlyFromUrl = searchParams.get('variantsOnly') === 'true'
+  const variantsOnly = forceVariantsOnly || variantsOnlyFromUrl
 
   // State management
   const [products, setProducts] = useState([])
@@ -67,6 +72,18 @@ const Shop = () => {
   })
 
   const [ratingsMap, setRatingsMap] = useState({})
+
+  useEffect(() => {
+    if (!centerToast.open) return
+    const t = setTimeout(() => setCenterToast((prev) => ({ ...prev, open: false })), 2200)
+    return () => clearTimeout(t)
+  }, [centerToast.open])
+
+  useEffect(() => {
+    return () => {
+      if (navigationTimeoutRef.current) clearTimeout(navigationTimeoutRef.current)
+    }
+  }, [])
 
   // Load categories on mount
   useEffect(() => {
@@ -230,23 +247,35 @@ const Shop = () => {
 
       // Handle both new API format and legacy format
       if (response.success && response.data) {
-        setProducts(response.data.products || [])
+        const nextProducts = response.data.products || []
+        const filteredProducts = variantsOnly
+          ? nextProducts.filter((p) => isMultiModelProduct(p) || p.productType === 'multi-model')
+          : nextProducts
+        setProducts(filteredProducts)
         if (response.data.pagination) {
           setPagination(prev => ({
             ...prev,
-            totalItems: response.data.pagination.totalItems || 0,
-            totalPages: response.data.pagination.totalPages || 1,
+            totalItems: variantsOnly
+              ? filteredProducts.length
+              : (response.data.pagination.totalItems || 0),
+            totalPages: variantsOnly
+              ? 1
+              : (response.data.pagination.totalPages || 1),
             currentPage: response.data.pagination.currentPage || 1
           }))
         }
       } else if (response.products) {
         // Legacy format fallback
-        setProducts(response.products || [])
+        const nextProducts = response.products || []
+        const filteredProducts = variantsOnly
+          ? nextProducts.filter((p) => isMultiModelProduct(p) || p.productType === 'multi-model')
+          : nextProducts
+        setProducts(filteredProducts)
         if (response.totalPages) {
           setPagination(prev => ({
             ...prev,
-            totalItems: response.totalItems || 0,
-            totalPages: response.totalPages || 1,
+            totalItems: variantsOnly ? filteredProducts.length : (response.totalItems || 0),
+            totalPages: variantsOnly ? 1 : (response.totalPages || 1),
             currentPage: response.currentPage || 1
           }))
         }
@@ -320,6 +349,10 @@ const Shop = () => {
 
   const handleAddToCart = async (product, e) => {
     e.preventDefault()
+    if (isMultiModelProduct(product) || product.productType === 'multi-model') {
+      navigate(`/product/${getProductPathSegment(product)}`)
+      return
+    }
     const success = await addToCart(product, 1)
     // Success handled by CartContext toast
   }
@@ -329,13 +362,27 @@ const Shop = () => {
     e.stopPropagation()
     
     if (!product.stock || product.stock <= 0) return
+    if (isMultiModelProduct(product) || product.productType === 'multi-model') {
+      navigate(`/product/${getProductPathSegment(product)}`)
+      return
+    }
     
     // Check if user is logged in
     const token = localStorage.getItem('token')
     if (!token) {
-      alert('Please login to proceed with Buy Now')
-      localStorage.setItem('redirectAfterLogin', `/product/${getProductPathSegment(product)}`)
-      navigate('/login')
+      const buyNowPrepared = await buyNow(product, 1)
+      if (!buyNowPrepared) return
+
+      setCenterToast({
+        open: true,
+        message: 'Please login to proceed with Buy Now',
+        variant: 'warning',
+      })
+      localStorage.setItem('redirectAfterLogin', '/checkout')
+      if (navigationTimeoutRef.current) clearTimeout(navigationTimeoutRef.current)
+      navigationTimeoutRef.current = setTimeout(() => {
+        navigate('/login')
+      }, 1200)
       return
     }
 
@@ -356,11 +403,20 @@ const Shop = () => {
 
   return (
     <div className="padding-large shop-page">
+      {centerToast.open && (
+        <div className="checkout-center-toast-overlay" role="status" aria-live="polite" aria-atomic="true">
+          <div className={`checkout-center-toast checkout-center-toast--${centerToast.variant}`}>
+            {centerToast.message}
+          </div>
+        </div>
+      )}
       <div className="container">
         {/* Header */}
         <div className="row mb-0">
           <div className="col-12">
-            <h1 className="text-uppercase mb-3 fw-bold" style={{ fontSize: 'clamp(1.5rem, 4vw, 2rem)' }}>Shop</h1>
+            <h1 className="text-uppercase mb-3 fw-bold" style={{ fontSize: 'clamp(1.5rem, 4vw, 2rem)' }}>
+              {variantsOnly ? 'Variant Products' : 'Shop'}
+            </h1>
           </div>
         </div>
 

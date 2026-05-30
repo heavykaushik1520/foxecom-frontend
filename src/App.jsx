@@ -17,6 +17,7 @@ import Layout from "./admin/Layout";
 // Lazy load user pages for code splitting
 const Home = lazy(() => import("./pages/Home"));
 const Shop = lazy(() => import("./pages/Shop"));
+const VariantProductsPage = lazy(() => import("./pages/VariantProductsPage"));
 const CategoryPage = lazy(() => import("./pages/CategoryPage"));
 const ProductDetails = lazy(() => import("./pages/ProductDetails"));
 const Cart = lazy(() => import("./pages/Cart"));
@@ -61,6 +62,7 @@ const EditProduct = lazy(() => import("./admin/pages/products/EditProduct"));
 const MobileCase = lazy(() => import("./admin/pages/caseDetails/MobileCase"));
 const AddMobileCase = lazy(() => import("./admin/pages/caseDetails/AddMobileCase"));
 const EditMobileCase = lazy(() => import("./admin/pages/caseDetails/EditMobileCase"));
+const AssignCompatibleModels = lazy(() => import("./admin/pages/caseDetails/AssignCompatibleModels"));
 const OrdersDashboard = lazy(() => import("./admin/pages/orders/OrdersDashboard"));
 const OrderView = lazy(() => import("./admin/pages/orders/OrderView"));
 const UsersDashboard = lazy(() => import("./admin/pages/users/UsersDashboard"));
@@ -71,6 +73,9 @@ const EditAdmin = lazy(() => import("./admin/pages/admins/EditAdmin"));
 const BannersDashboard = lazy(() => import("./admin/pages/banners/BannersDashboard"));
 const AddBanner = lazy(() => import("./admin/pages/banners/AddBanner"));
 const EditBanner = lazy(() => import("./admin/pages/banners/EditBanner"));
+const MarqueesDashboard = lazy(() => import("./admin/pages/marquees/MarqueesDashboard"));
+const AddMarquee = lazy(() => import("./admin/pages/marquees/AddMarquee"));
+const EditMarquee = lazy(() => import("./admin/pages/marquees/EditMarquee"));
 const DealOfTheWeekDashboard = lazy(() => import("./admin/pages/dealOfTheWeek/DealOfTheWeekDashboard"));
 const AddDealOfTheWeek = lazy(() => import("./admin/pages/dealOfTheWeek/AddDealOfTheWeek"));
 const EditDealOfTheWeek = lazy(() => import("./admin/pages/dealOfTheWeek/EditDealOfTheWeek"));
@@ -158,6 +163,7 @@ function App() {
                 <Route path="/" element={<UserLayout />}>
                   <Route index element={<Home />} />
                   <Route path="shop" element={<Shop />} />
+                  <Route path="shop/variants" element={<VariantProductsPage />} />
                   <Route path="category/:slug" element={<CategoryPage />} />
                   <Route path="contact-us" element={<ContactUs />} />
                   <Route path="about-us" element={<AboutUs />} />
@@ -283,6 +289,10 @@ function App() {
                     element={<EditMobileCase />}
                   />
                   <Route
+                    path="mobile-case/assign-models"
+                    element={<AssignCompatibleModels />}
+                  />
+                  <Route
                     path="orders"
                     element={<OrdersDashboard />}
                   />
@@ -313,6 +323,9 @@ function App() {
                   <Route path="banners" element={<BannersDashboard />} />
                   <Route path="banners/add" element={<AddBanner />} />
                   <Route path="banners/edit/:id" element={<EditBanner />} />
+                  <Route path="marquees" element={<MarqueesDashboard />} />
+                  <Route path="marquees/add" element={<AddMarquee />} />
+                  <Route path="marquees/edit/:id" element={<EditMarquee />} />
                   <Route path="deal-of-the-week" element={<DealOfTheWeekDashboard />} />
                   <Route path="deal-of-the-week/add" element={<AddDealOfTheWeek />} />
                   <Route path="deal-of-the-week/edit/:id" element={<EditDealOfTheWeek />} />

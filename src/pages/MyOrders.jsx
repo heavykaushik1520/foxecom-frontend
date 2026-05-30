@@ -276,6 +276,9 @@ const MyOrders = () => {
                                   {item.product?.title || 'Product'}
                                 </strong>
                                 <small className="text-muted d-block mt-1" style={{ fontSize: 'clamp(0.75rem, 2vw, 0.85rem)' }}>
+                                  {item.selectedModelName ? (
+                                    <span className="d-block mb-1">Model: {item.selectedModelName}</span>
+                                  ) : null}
                                   Qty: {item.quantity} × {formatCurrency(item.priceAtPurchase)}
                                 </small>
                               </div>

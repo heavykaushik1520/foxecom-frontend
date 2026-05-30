@@ -305,7 +305,8 @@ function SuperAdminDashboard() {
                                         <ul className="mb-0 mt-1 list-unstyled">
                                           {order.orderItems.map((item) => (
                                             <li key={item.id}>
-                                              {item.product?.title ?? `Product #${item.productId}`} × {item.quantity} @ {formatCurrency(parseFloat(item.priceAtPurchase))}
+                                              {item.product?.title ?? `Product #${item.productId}`}
+                                              {item.selectedModelName ? ` (${item.selectedModelName})` : ""} × {item.quantity} @ {formatCurrency(parseFloat(item.priceAtPurchase))}
                                             </li>
                                           ))}
                                         </ul>

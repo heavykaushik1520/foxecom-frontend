@@ -473,6 +473,11 @@ const OrderView = () => {
                             )}
                             <div>
                               <strong>{item.product?.title || "Product"}</strong>
+                              {item.selectedModelName && (
+                                <div className="text-muted small mt-1">
+                                  Model: {item.selectedModelName}
+                                </div>
+                              )}
                             </div>
                           </div>
                         </td>

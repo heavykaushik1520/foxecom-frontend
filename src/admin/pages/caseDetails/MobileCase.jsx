@@ -65,11 +65,19 @@ const MobileCase = () => {
   return (
     <>
       {/* Page Header */}
-      <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
-        <h4 className="mb-2 mb-md-0 text-uppercase">MOBILE CASES</h4>
-        <Link to={"/admin/mobile-case/add"} className="btn btn-primary">
-          + Add Case
-        </Link>
+      <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-4">
+        <h4 className="mb-0 text-uppercase">MOBILE CASES</h4>
+        <div className="d-flex flex-wrap gap-2 w-100 w-md-auto justify-content-stretch justify-content-md-end">
+          <Link
+            to={"/admin/mobile-case/assign-models"}
+            className="btn btn-outline-primary flex-grow-1 flex-md-grow-0"
+          >
+            Compatible models
+          </Link>
+          <Link to={"/admin/mobile-case/add"} className="btn btn-primary flex-grow-1 flex-md-grow-0">
+            + Add Case
+          </Link>
+        </div>
       </div>
 
       {/* Info Bar */}

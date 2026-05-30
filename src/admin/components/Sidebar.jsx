@@ -20,6 +20,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     { path: "/admin/categories", label: "Categories" },
     { path: "/admin/products", label: "Products" },
     { path: "/admin/banners", label: "Banners" },
+    { path: "/admin/marquees", label: "Marquee Ticker" },
     { path: "/admin/buy-one-get-one", label: "Buy One Get One" },
     { path: "/admin/deal-of-the-week", label: "Deal of the Week" },
     { path: "/admin/foxcom-originals", label: "FOXECOM Originals" },
@@ -32,6 +33,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     { path: "/admin/mobile-brand", label: "Mobile Brand" },
     { path: "/admin/mobile-model", label: "Mobile Model" },
     { path: "/admin/mobile-case", label: "Mobile Case" },
+    { path: "/admin/mobile-case/assign-models", label: "Compatible models" },
   ];
 
   const handleLinkClick = () => {

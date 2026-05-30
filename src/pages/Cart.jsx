@@ -1,14 +1,18 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../contexts/CartContext'
-import { getImageUrl } from '../utils/api'
+import { checkoutAPI, getImageUrl } from '../utils/api'
 import { getProductPathSegment } from '../utils/productPath'
+import { cartLineKey, getSelectedModelLabel, getUnitPriceForLine } from '../utils/cartLinePrice'
+import { CartPageSkeleton } from '../components/PageSkeletons'
 import fallbackImage from '../assest/images/product-item1.jpg'
 
 const Cart = () => {
   const { cartItems, updateQuantity, removeFromCart, clearCart, getCartTotal, loading, loadCart, isLoggedIn } = useCart()
   const navigate = useNavigate()
   const [centerToast, setCenterToast] = useState({ open: false, message: '', variant: 'warning' })
+  const [serverUnitPriceMap, setServerUnitPriceMap] = useState({})
+  const [serverModelNameMap, setServerModelNameMap] = useState({})
   const navigationTimeoutRef = React.useRef(null)
 
   useEffect(() => {
@@ -20,6 +24,44 @@ const Cart = () => {
     const t = setTimeout(() => setCenterToast((prev) => ({ ...prev, open: false })), 3000)
     return () => clearTimeout(t)
   }, [centerToast.open])
+
+  useEffect(() => {
+    const loadServerPricing = async () => {
+      if (!isLoggedIn || !cartItems.length) {
+        setServerUnitPriceMap({})
+        setServerModelNameMap({})
+        return
+      }
+      try {
+        const data = await checkoutAPI.getSummary('OTHER')
+        const lines = data?.summary?.products || []
+        const nextPriceMap = {}
+        const nextModelMap = {}
+
+        lines.forEach((line) => {
+          const sid = line.selectedModelId ?? ''
+          const key = `${line.id}-${sid}`
+          const qty = Number(line.quantity) || 1
+          const total = parseFloat(line.total)
+          if (Number.isFinite(total) && qty > 0) {
+            nextPriceMap[key] = total / qty
+          }
+          if (line.selectedModelName) {
+            nextModelMap[key] = line.selectedModelName
+          }
+        })
+
+        setServerUnitPriceMap(nextPriceMap)
+        setServerModelNameMap(nextModelMap)
+      } catch {
+        // Keep local fallback pricing if checkout summary cannot be fetched.
+        setServerUnitPriceMap({})
+        setServerModelNameMap({})
+      }
+    }
+
+    loadServerPricing()
+  }, [isLoggedIn, cartItems])
 
   const handleCheckout = () => {
     if (cartItems.length === 0) {
@@ -46,19 +88,18 @@ const Cart = () => {
     return `₹${parseFloat(price).toFixed(2)}`
   }
 
+  const resolvedCartTotal = cartItems.reduce((sum, item) => {
+    const sid = item.selectedModelId ?? ''
+    const lineKey = `${item.id}-${sid}`
+    const serverUnit = serverUnitPriceMap[lineKey]
+    const unit = Number.isFinite(serverUnit)
+      ? serverUnit
+      : getUnitPriceForLine(item, item.selectedModelId)
+    return sum + unit * item.quantity
+  }, 0)
+
   if (loading) {
-    return (
-      <div className="padding-large text-center" style={{ minHeight: '60vh' }}>
-        <div className="container">
-          <div className="py-4 py-md-5">
-            <div className="spinner-border" role="status" style={{ width: '3rem', height: '3rem' }}>
-              <span className="visually-hidden">Loading...</span>
-            </div>
-            <p className="mt-3 mb-0 text-muted" style={{ fontSize: 'clamp(0.9rem, 2vw, 1rem)' }}>Loading cart...</p>
-          </div>
-        </div>
-      </div>
-    )
+    return <CartPageSkeleton />
   }
 
   if (cartItems.length === 0) {
@@ -181,11 +222,22 @@ const Cart = () => {
               <div className="card">
                 <div className="card-body p-3 p-md-4">
                   {cartItems.map((item) => {
-                    const itemPrice = item.discountPrice || item.price
+                    const sid = item.selectedModelId ?? ''
+                    const lineKey = `${item.id}-${sid}`
+                    const serverUnit = serverUnitPriceMap[lineKey]
+                    const itemPrice = Number.isFinite(serverUnit)
+                      ? serverUnit
+                      : getUnitPriceForLine(item, item.selectedModelId)
                     const itemTotal = itemPrice * item.quantity
+                    const modelLabel =
+                      serverModelNameMap[lineKey] ||
+                      getSelectedModelLabel(item, item.selectedModelId) ||
+                      (item.caseDetails
+                        ? `${item.caseDetails.brand?.name || ''} ${item.caseDetails.model?.name || ''}`.trim()
+                        : null)
                     
                     return (
-                      <div key={item.id} className="cart-item mb-4 pb-4 border-bottom">
+                      <div key={cartLineKey(item)} className="cart-item mb-4 pb-4 border-bottom">
                         {/* Mobile Layout: Stack vertically */}
                         <div className="d-flex d-md-none flex-column">
                           <div className="d-flex mb-3 cart-mobile-item-row">
@@ -217,14 +269,14 @@ const Cart = () => {
                                   Category: <span className="text-capitalize">{item.category}</span>
                                 </p>
                               )}
-                              {item.caseDetails && (
+                              {modelLabel && (
                                 <p className="text-muted small cart-mobile-meta" style={{ fontSize: '0.75rem' }}>
-                                  {item.caseDetails.brand?.name} {item.caseDetails.model?.name}
+                                  Model: {modelLabel}
                                 </p>
                               )}
                               <div className="mb-2 cart-mobile-price">
                                 <p className="text-primary mb-0 fw-bold" style={{ fontSize: 'clamp(0.95rem, 2.5vw, 1.1rem)' }}>{formatPrice(itemPrice)}</p>
-                                {item.discountPrice && (
+                                {item.discountPrice && itemPrice === item.discountPrice && (
                                   <small className="text-decoration-line-through" style={{ fontSize: '0.75rem', color: '#495057' }}>{formatPrice(item.price)}</small>
                                 )}
                               </div>
@@ -234,29 +286,29 @@ const Cart = () => {
                             <div className="d-flex align-items-center">
                               <button
                                 className="btn btn-outline-secondary btn-sm"
-                                onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                onClick={() => updateQuantity(item.id, item.quantity - 1, item.selectedModelId)}
                                 style={{ minWidth: '36px', padding: '0.25rem 0.5rem' }}
                               >
                                 -
                               </button>
-                              <label htmlFor={`cart-mobile-qty-${item.id}`} className="visually-hidden">
+                              <label htmlFor={`cart-mobile-qty-${cartLineKey(item)}`} className="visually-hidden">
                                 Quantity for {item.title}
                               </label>
                               <input
-                                id={`cart-mobile-qty-${item.id}`}
+                                id={`cart-mobile-qty-${cartLineKey(item)}`}
                                 type="number"
                                 className="form-control text-center mx-2 cart-mobile-qty-input"
                                 style={{ width: '60px', fontSize: '0.9rem', padding: '0.25rem' }}
                                 value={item.quantity}
                                 onChange={(e) => {
                                   const val = parseInt(e.target.value) || 1
-                                  updateQuantity(item.id, val)
+                                  updateQuantity(item.id, val, item.selectedModelId)
                                 }}
                                 min="1"
                               />
                               <button
                                 className="btn btn-outline-secondary btn-sm"
-                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                onClick={() => updateQuantity(item.id, item.quantity + 1, item.selectedModelId)}
                                 style={{ minWidth: '36px', padding: '0.25rem 0.5rem' }}
                               >
                                 +
@@ -266,7 +318,7 @@ const Cart = () => {
                               <p className="mb-1 fw-bold" style={{ fontSize: 'clamp(1rem, 2.5vw, 1.25rem)' }}>{formatPrice(itemTotal)}</p>
                               <button
                                 className="btn btn-link text-danger p-0"
-                                onClick={() => removeFromCart(item.id)}
+                                onClick={() => removeFromCart(item.id, item.selectedModelId)}
                                 style={{ fontSize: '0.85rem' }}
                               >
                                 Remove
@@ -299,13 +351,13 @@ const Cart = () => {
                             {item.category && (
                               <p className="text-muted mb-2 small">Category: <span className="text-capitalize">{item.category}</span></p>
                             )}
-                            {item.caseDetails && (
+                            {modelLabel && (
                               <p className="text-muted mb-2 small">
-                                {item.caseDetails.brand?.name} {item.caseDetails.model?.name}
+                                Model: {modelLabel}
                               </p>
                             )}
                             <p className="text-primary mb-0 fw-bold" style={{ fontSize: 'clamp(1rem, 1.5vw, 1.1rem)' }}>{formatPrice(itemPrice)}</p>
-                            {item.discountPrice && (
+                            {item.discountPrice && itemPrice === item.discountPrice && (
                               <small className="text-decoration-line-through" style={{ fontSize: '0.85rem', color: '#495057' }}>{formatPrice(item.price)}</small>
                             )}
                           </div>
@@ -313,29 +365,29 @@ const Cart = () => {
                           <div className="d-flex align-items-center me-3 me-md-4">
                             <button
                               className="btn btn-outline-secondary btn-sm"
-                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                              onClick={() => updateQuantity(item.id, item.quantity - 1, item.selectedModelId)}
                               style={{ minWidth: '40px' }}
                             >
                               -
                             </button>
-                            <label htmlFor={`cart-desktop-qty-${item.id}`} className="visually-hidden">
+                            <label htmlFor={`cart-desktop-qty-${cartLineKey(item)}`} className="visually-hidden">
                               Quantity for {item.title}
                             </label>
                             <input
-                              id={`cart-desktop-qty-${item.id}`}
+                              id={`cart-desktop-qty-${cartLineKey(item)}`}
                               type="number"
                               className="form-control text-center mx-2"
                               style={{ width: '80px', fontSize: '0.95rem' }}
                               value={item.quantity}
                               onChange={(e) => {
                                 const val = parseInt(e.target.value) || 1
-                                updateQuantity(item.id, val)
+                                updateQuantity(item.id, val, item.selectedModelId)
                               }}
                               min="1"
                             />
                             <button
                               className="btn btn-outline-secondary btn-sm"
-                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                              onClick={() => updateQuantity(item.id, item.quantity + 1, item.selectedModelId)}
                               style={{ minWidth: '40px' }}
                             >
                               +
@@ -346,7 +398,7 @@ const Cart = () => {
                             <p className="mb-2 fw-bold" style={{ fontSize: 'clamp(1.1rem, 1.8vw, 1.25rem)' }}>{formatPrice(itemTotal)}</p>
                             <button
                               className="btn btn-link text-danger p-0"
-                              onClick={() => removeFromCart(item.id)}
+                              onClick={() => removeFromCart(item.id, item.selectedModelId)}
                               style={{ fontSize: '0.9rem' }}
                             >
                               Remove
@@ -380,7 +432,7 @@ const Cart = () => {
                 <div className="card-body">
                   <div className="d-flex justify-content-between mb-3" style={{ fontSize: 'clamp(0.85rem, 2vw, 0.95rem)' }}>
                     <span>Subtotal ({cartItems.reduce((sum, item) => sum + item.quantity, 0)} items)</span>
-                    <strong>{formatPrice(getCartTotal())}</strong>
+                    <strong>{formatPrice(resolvedCartTotal)}</strong>
                   </div>
                   <div className="d-flex justify-content-between mb-3" style={{ fontSize: 'clamp(0.85rem, 2vw, 0.95rem)' }}>
                     <span>Shipping</span>
@@ -390,7 +442,7 @@ const Cart = () => {
                   <div className="d-flex justify-content-between mb-4">
                     <strong style={{ fontSize: 'clamp(1rem, 2vw, 1.1rem)' }}>Total</strong>
                     <strong className="text-primary fw-bold cart-total-price" style={{ fontSize: 'clamp(1.25rem, 3vw, 1.5rem)' }}>
-                      {formatPrice(getCartTotal())}
+                      {formatPrice(resolvedCartTotal)}
                     </strong>
                   </div>
 

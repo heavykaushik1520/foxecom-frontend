@@ -7,6 +7,7 @@ const DealOfTheWeek = lazy(() => import('../components/DealOfTheWeek'))
 const FeaturedProducts = lazy(() => import('../components/FeaturedProducts'))
 const FoxcomOriginals = lazy(() => import('../components/FoxcomOriginals'))
 const SamsungProducts = lazy(() => import('../components/SamsungProducts'))
+const VariantProducts = lazy(() => import('../components/VariantProducts'))
 const BestSellers = lazy(() => import('../components/BestSellers'))
 
 const Home = () => {
@@ -45,6 +46,11 @@ const Home = () => {
       {/* Samsung Case Section */}
       <Suspense fallback={null}>
         <SamsungProducts />
+      </Suspense>
+
+      {/* Variant Products Section */}
+      <Suspense fallback={null}>
+        <VariantProducts title="Variant Products" limit={12} showViewAll={true} />
       </Suspense>
       
       {/* Best Sellers Section */}

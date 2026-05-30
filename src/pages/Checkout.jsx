@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { useCart } from '../contexts/CartContext'
 import { checkoutAPI, orderAPI, paymentAPI, userAuthAPI } from '../utils/api'
 import { STORAGE_KEYS } from '../utils/constants'
+import { cartLineKey, getSelectedModelLabel, getUnitPriceForLine } from '../utils/cartLinePrice'
+import { CheckoutPageSkeleton } from '../components/PageSkeletons'
 
 const INDIAN_STATES_AND_UTS = [
   "Andhra Pradesh",
@@ -277,17 +279,7 @@ const Checkout = () => {
   }
 
   if (loading && !checkoutSummary) {
-    return (
-      <div className="padding-large">
-        <div className="container">
-          <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '50vh' }}>
-            <div className="spinner-border" role="status">
-              <span className="visually-hidden">Loading...</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
+    return <CheckoutPageSkeleton />
   }
 
   if (!isLoggedIn) {
@@ -367,11 +359,31 @@ const Checkout = () => {
                 )}
               </div>
               <div className="card-body">
-                {cartItems.map((item) => (
-                  <div key={item.id} className="mb-3 pb-3 border-bottom">
+                {cartItems.map((item) => {
+                  const sumLine = summary?.products?.find(
+                    (r) =>
+                      r.id === item.id &&
+                      (r.selectedModelId ?? null) === (item.selectedModelId ?? null)
+                  )
+                  const lineTotalAmt =
+                    sumLine?.total != null
+                      ? parseFloat(sumLine.total)
+                      : getUnitPriceForLine(item, item.selectedModelId) * item.quantity
+                  const modelLabel =
+                    sumLine?.selectedModelName ||
+                    getSelectedModelLabel(item, item.selectedModelId) ||
+                    (item.caseDetails
+                      ? `${item.caseDetails.brand?.name || ''} ${item.caseDetails.model?.name || ''}`.trim()
+                      : null)
+
+                  return (
+                  <div key={cartLineKey(item)} className="mb-3 pb-3 border-bottom">
                     <div className="d-flex justify-content-between align-items-start mb-2">
-                      <div className="flex-grow-1">
-                        <strong>{item.title}</strong>
+                      <div className="flex-grow-1 min-w-0">
+                        <strong className="d-block">{item.title}</strong>
+                        {modelLabel && (
+                          <small className="text-muted d-block mt-1">Model: {modelLabel}</small>
+                        )}
                         {isBuyNowMode && (
                           <div className="mt-2">
                             <div className="d-flex align-items-center gap-2 checkout-qty-row">
@@ -382,7 +394,7 @@ const Checkout = () => {
                                   className="btn btn-sm btn-outline-secondary"
                                   onClick={() => {
                                     const newQty = Math.max(1, item.quantity - 1)
-                                    updateQuantity(item.id, newQty)
+                                    updateQuantity(item.id, newQty, item.selectedModelId)
                                   }}
                                   style={{ border: 'none', borderRadius: 0 }}
                                 >
@@ -397,7 +409,7 @@ const Checkout = () => {
                                   onClick={() => {
                                     const maxStock = item.stock || 999
                                     const newQty = Math.min(maxStock, item.quantity + 1)
-                                    updateQuantity(item.id, newQty)
+                                    updateQuantity(item.id, newQty, item.selectedModelId)
                                   }}
                                   style={{ border: 'none', borderRadius: 0 }}
                                 >
@@ -411,10 +423,10 @@ const Checkout = () => {
                           <small className="text-muted">Qty: {item.quantity}</small>
                         )}
                       </div>
-                      <strong className="ms-2">{formatPrice((item.discountPrice || item.price) * item.quantity)}</strong>
+                      <strong className="ms-2 flex-shrink-0">{formatPrice(lineTotalAmt)}</strong>
                     </div>
                   </div>
-                ))}
+                )})}
                 <hr />
                 <div className="d-flex justify-content-between mb-2">
                   <span>Subtotal</span>

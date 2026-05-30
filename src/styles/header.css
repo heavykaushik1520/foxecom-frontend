@@ -54,7 +54,7 @@ body {
 /* Add padding to main content to prevent header overlap (top row + nav bar) */
 main,
 .page-content {
-  padding-top: 100px;
+  padding-top: 132px;
 }
 
 /* For pages with margin-top, ensure it accounts for header (top row + brand bar) */
@@ -157,7 +157,7 @@ body.mobile-sidebar-open {
 
   main,
   .page-content {
-    padding-top: 60px;
+    padding-top: 86px;
   }
   
   .padding-large {

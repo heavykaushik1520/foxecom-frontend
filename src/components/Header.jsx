@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "../contexts/CartContext";
 import { userAuthAPI, mobileBrandAPI, mobileModelAPI } from "../utils/api";
 import logoImg from "../assest/logo/foxicom.webp";
+import MarqueeTicker from "./MarqueeTicker";
 
 const Header = ({ isLoggedIn: isLoggedInProp, setIsLoggedIn: setIsLoggedInProp }) => {
   const { getCartItemsCount, loadCart } = useCart();
@@ -187,6 +188,7 @@ const Header = ({ isLoggedIn: isLoggedInProp, setIsLoggedIn: setIsLoggedInProp }
 
   return (
     <header className="fixed-top bg-white shadow-sm">
+      <MarqueeTicker />
       {/* Mobile backdrop when sidebar is open */}
       <div
         className={`mobile-sidebar-backdrop d-lg-none position-fixed top-0 start-0 end-0 bottom-0 bg-dark ${mobileSidebarOpen ? 'show' : ''}`}

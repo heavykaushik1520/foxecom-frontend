@@ -13,6 +13,13 @@ import { productAPI, dealOfTheWeekAPI, getImageUrl, reviewAPI } from "../utils/a
 import { useCart } from "../contexts/CartContext";
 import SimilarProducts from "../components/SimilarProducts";
 import fallbackImage from "../assest/images/product-item1.jpg";
+import {
+  isMultiModelProduct,
+  getUnitPriceForLine,
+  getDefaultUnitPrice,
+} from "../utils/cartLinePrice";
+import { ProductDetailSkeleton } from "../components/PageSkeletons";
+import { emitAppToast } from "../utils/toast";
 
 const DealOfTheWeekPage = () => {
   const navigate = useNavigate();
@@ -41,6 +48,7 @@ const DealOfTheWeekPage = () => {
   const [totalReviewCount, setTotalReviewCount] = useState(0);
   const [distributionPercent, setDistributionPercent] = useState({});
   const [loadingReviews, setLoadingReviews] = useState(false);
+  const [selectedModelId, setSelectedModelId] = useState("");
 
   const maskDisplayName = (value) => {
     const v = String(value || "").trim();
@@ -97,6 +105,16 @@ const DealOfTheWeekPage = () => {
 
     loadDealProduct();
   }, [navigate]);
+
+  useEffect(() => {
+    if (!product) return;
+    if (isMultiModelProduct(product)) {
+      const first = product.availableModels[0];
+      setSelectedModelId(first ? String(first.modelId) : "");
+    } else {
+      setSelectedModelId("");
+    }
+  }, [product]);
 
   useEffect(() => {
     if (!product?.id) return;
@@ -257,7 +275,8 @@ const DealOfTheWeekPage = () => {
 
   const handleAddToCart = async () => {
     if (product) {
-      const success = await addToCart(product, quantity);
+      const modelArg = isMultiModelProduct(product) ? selectedModelId : null;
+      const success = await addToCart(product, quantity, modelArg);
       if (success) {
         // Success handled by CartContext toast
       }
@@ -269,13 +288,16 @@ const DealOfTheWeekPage = () => {
 
     const token = localStorage.getItem("token");
     if (!token) {
-      alert("Please login to proceed with Buy Now");
+      emitAppToast("Please login to proceed with Buy Now", "warning");
       localStorage.setItem("redirectAfterLogin", `/deal-of-the-week`);
-      navigate("/login");
+      setTimeout(() => {
+        navigate("/login");
+      }, 1200);
       return;
     }
 
-    const success = await buyNow(product, quantity);
+    const modelArg = isMultiModelProduct(product) ? selectedModelId : null;
+    const success = await buyNow(product, quantity, modelArg);
     if (success) {
       navigate("/checkout");
     }
@@ -328,16 +350,7 @@ const DealOfTheWeekPage = () => {
   };
 
   if (loading) {
-    return (
-      <div
-        className="d-flex justify-content-center align-items-center"
-        style={{ minHeight: "100vh" }}
-      >
-        <div className="spinner-border" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
-      </div>
-    );
+    return <ProductDetailSkeleton />;
   }
 
   if (!product) {
@@ -363,9 +376,54 @@ const DealOfTheWeekPage = () => {
   }
 
   const images = imagePaths.map((path) => getImageUrl(path));
-  const price = parseFloat(product.discountPrice || product.price);
-  const originalPrice = product.discountPrice ? parseFloat(product.price) : null;
+
+  const modelGroups = (() => {
+    const map = new Map();
+    for (const row of product.availableModels || []) {
+      const bid = row.brandId;
+      if (!map.has(bid)) {
+        map.set(bid, {
+          brandId: bid,
+          brandName: row.brand?.name || `Brand ${bid}`,
+          rows: [],
+        });
+      }
+      map.get(bid).rows.push(row);
+    }
+    return Array.from(map.values());
+  })();
+
+  const multiModel = isMultiModelProduct(product);
+  const selectedRow = multiModel
+    ? product.availableModels.find(
+        (m) => Number(m.modelId) === parseInt(selectedModelId, 10),
+      )
+    : null;
+  const hasPriceOverride =
+    selectedRow &&
+    selectedRow.priceOverride != null &&
+    selectedRow.priceOverride !== "";
+
+  const price = multiModel
+    ? getUnitPriceForLine(product, selectedModelId)
+    : parseFloat(product.discountPrice || product.price);
+
+  let originalPrice = null;
+  if (multiModel) {
+    if (hasPriceOverride) {
+      originalPrice = getDefaultUnitPrice(product);
+    } else if (product.discountPrice) {
+      originalPrice = parseFloat(product.price);
+    }
+  } else if (product.discountPrice) {
+    originalPrice = parseFloat(product.price);
+  }
+
   const inStock = product.stock && product.stock > 0;
+
+  const inCartThisVariant = multiModel
+    ? isInCart(product.id, selectedModelId)
+    : isInCart(product.id);
 
   return (
     <div className="padding-large">
@@ -678,6 +736,36 @@ const DealOfTheWeekPage = () => {
                 </p>
               </div>
 
+              {multiModel && (
+                <div className="compatible-models-select mb-4">
+                  <label
+                    htmlFor="deal-compatible-model-select"
+                    className="form-label fw-semibold mb-2 d-block model-select-label"
+                  >
+                    Select your phone model
+                  </label>
+                  <select
+                    id="deal-compatible-model-select"
+                    className="form-select model-select-control"
+                    value={selectedModelId}
+                    onChange={(e) => setSelectedModelId(e.target.value)}
+                  >
+                    {modelGroups.map((g) => (
+                      <optgroup key={g.brandId} label={g.brandName}>
+                        {g.rows.map((row) => (
+                          <option key={row.modelId} value={String(row.modelId)}>
+                            {row.model?.name || `Model ${row.modelId}`}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                  <p className="text-muted mt-2 mb-0 model-select-help">
+                    Price may vary by model.
+                  </p>
+                </div>
+              )}
+
               {product.caseDetails && (
                 <div className="case-details mb-4">
                   <h2
@@ -813,7 +901,7 @@ const DealOfTheWeekPage = () => {
                   onClick={handleAddToCart}
                   disabled={!inStock}
                 >
-                  {isInCart(product.id) ? "Add to Cart" : "Add to Cart"}
+                  {inCartThisVariant ? "Added — add more" : "Add to Cart"}
                 </button>
                 <button
                   className="btn btn-lg w-100 btn-buy-now"

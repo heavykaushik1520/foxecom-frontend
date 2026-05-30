@@ -9,11 +9,11 @@ const getBasename = () => {
 };
 
 export const APP_CONFIG = {
-   BASE_URL: 'https://foxecom.in/backend',
-  API_BASE_URL: 'https://foxecom.in/backend/api',
+  //  BASE_URL: 'https://www.foxecom.in/backend',
+  // API_BASE_URL: 'https://www.foxecom.in/backend/api',
   
-  // BASE_URL: 'http://localhost:3000',
-  // API_BASE_URL: 'http://localhost:3000/api',
+  BASE_URL: 'http://localhost:3000',
+  API_BASE_URL: 'http://localhost:3000/api',
   BASENAME: getBasename(),
 };
 
